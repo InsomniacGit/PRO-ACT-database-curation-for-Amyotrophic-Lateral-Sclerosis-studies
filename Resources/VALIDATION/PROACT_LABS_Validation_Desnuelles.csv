@@ -1,0 +1,249 @@
+Test_Name;;;;
+absolute atypical lymphocyte count;;;;
+absolute band neutrophil count;;;;
+absolute basophil count;;;;x
+absolute eosinophil count;;;;x
+absolute lymphocyte count;;;;x
+absolute metamyelocyte count;;;;x
+absolute monocyte count;;;;x
+absolute myelocyte count;;;;x
+absolute neutrophil count;;;;x
+absolute reticulocyte count;;;;x
+absolute segmented neutrophil count;;;;
+albumin;;;;x
+albumin/globulin ratio;;;;
+aldolase;;;;
+alkaline phosphatase;;;;x
+alpha1-globulin;;;;
+alpha2-globulin;;;;
+alt(sgpt);;;;x
+amorphous phosphate crystals;;;;
+amorphous urates crystals;;;;
+amylase;;;;
+anion gap;;;;
+antinuclear antibody;;;;x
+arterial o2 fraction;;;;
+ast(sgot);;;;
+atypical lymphocytes;;;;
+band neutrophils;;;;
+base excess;;;;x
+baseline estimated glomerular filtration rate;;;;
+basophillic stippling;;;;
+basophils;;;;x
+beta hcg;;;;
+beta hcg quantitative;;;;
+beta-globulin;;;;
+bicarbonate;;;;
+bilirubin (direct);;;;
+bilirubin (indirect);;;;
+bilirubin (total);;;;x
+blood urea nitrogen (bun);;;;x
+c-reactive protein;;;;x
+calcium;;;;x
+calcium phosphate crystals;;;;
+carbon dioxide;;;;
+chloride;;;;x
+clue cells, urine;;;;
+co2 fraction;;;;
+creatine kinase;;;;x
+creatine kinase bb;;;;
+creatine kinase mb;;;;
+creatine kinase mm;;;;
+creatinine;;;;x
+crphsedtapl,noncardiac(-70)-cl;;;;
+cystatin c;;;;
+cystine crystals;;;;
+egfr ckd cystatin c;;;;
+eosinophils;;;;x
+erythrocyte distribution width;;;;
+erythrocyte sediment;;;;
+estimated glomerular filtration rate (percent decline);;;;
+fatty casts;;;;
+ferritin;;;;x
+fibrinogen;;;;x
+folate;;;;
+follicle stimulating hormone;;;;x
+free (unbound) testosterone;;;;x
+free t3;;;;x
+free t4;;;;x
+free thyroxine index;;;;
+gamma-globulin;;;;
+gamma-glutamyltransferase;;;;x
+gfr;;;;
+globulin;;;;
+glucose;;;;
+granular casts;;;;
+h. pylori antibody;;;;
+hba1c (glycated hemoglobin);;;;x
+hdl;;;;
+hematocrit;;;;x
+hemoglobin;;;;x
+hepatitis a;;;;
+hepatitis a antibody;;;;x
+hepatitis b;;;;
+hepatitis b antibody;;;;x
+hepatitis b antigen;;;;
+hepatitis c;;;;
+hepatitis c antibody;;;;x
+hyaline cast;;;;
+hydration volume;;;;
+immunofixation;;;;
+immunoglobulin a;;;;x
+immunoglobulin g;;;;x
+immunoglobulin m;;;;x
+international normalized ratio (clotting);;;;
+iron;;;;x
+iron binding capacity;;;;x
+iron bound to transferrin;;;;
+lactate dehydrogenase;;;;x
+lactate dehydrogenase - 1;;;;
+lactate dehydrogenase - 2;;;;
+lactate dehydrogenase - 3;;;;
+lactate dehydrogenase - 4;;;;
+lactate dehydrogenase - 5;;;;
+lactic acid;;;;
+ldl;;;;
+leucine crystals;;;;
+lipase;;;;
+lithium;;;;
+luteinizing hormone;;;;x
+lymphocytes;;;;x
+magnesium;;;;x
+malondialdehyde;;;;
+mean corpuscular hemoglobin;;;;
+mean corpuscular hemoglobin concentration;;;;x
+mean corpuscular volume;;;;x
+mean platelet volume;;;;
+metamyelocytes;;;;
+monocytes;;;;
+myelocytes;;;;
+neutrophils;;;;x
+nitrites;;;;
+normocytic;;;;
+nucleated red blood cells;;;;
+osmolality;;;;
+osmolality gap;;;;
+oval fat bodies;;;;
+pancreatic amylase;;;;x
+parathyroid hormone;;;;
+partial thromboplastin time;;;;
+phosphate;;;;x
+phosphorus;;;;
+plasma ph;;;;x
+platelets;;;;x
+polychromasia;;;;
+potassium;;;;
+pregnancy (serum);;;;
+pregnancy test;;;;
+protein;;;;x
+prothrombin time (clotting);;;;x
+prothrombin time ratio;;;;
+rbc casts;;;;
+rbc distribution width;;;;
+rbc morphology;;;;
+rbc morphology: anisocytosis;;;;
+rbc morphology: elliptocytes;;;;
+rbc morphology: macrocytosis;;;;
+rbc morphology: microcytosis;;;;
+rbc morphology: schistocytes;;;;
+rbc morphology: spherocytes;;;;
+rbc morphology: target cells;;;;
+rbc morphology: tear drop cells;;;;
+reactive lymphs;;;;
+red blood cells (rbc);;;;x
+reticulocytes (%);;;;x
+salivary amylase;;;;
+saturated o2 fraction;;;;
+segmented neutrophils;;;;
+sodium;;;;
+stool occult blood;;;;
+t3 uptake;;;;
+thyroid stimulating hormone;;;;x
+thyroid uptake;;;;
+total cholesterol;;;;x
+total cortisol;;;;x
+total t3;;;;x
+total t4;;;;x
+total yield;;;;
+transferrin;;;;x
+transferrin saturation;;;;
+trichomonas;;;;
+triglycerides;;;;x
+triple phosphate crystals;;;;
+tsh;;;;x
+tubular epithelial cells;;;;
+tyrosine crystals;;;;
+unsaturated iron binding capacity;;;;
+uric acid;;;;x
+uric acid crystals;;;;
+urine albumin;;;;x
+urine ammonia urate crystals;;;;
+urine amorphous crystals;;;;x
+urine appearance;;;;
+urine bacteria;;;;x
+urine bilirubin;;;;
+urine blood;;;;x
+urine calcium carbonate crystals;;;;
+urine calcium oxalate crystals;;;;
+urine calcium phosphate crystals;;;;
+urine casts;;;;
+urine cellular casts;;;;
+urine clarity;;;;
+urine coarsely granular cast;;;;
+urine collection duration;;;;
+urine color;;;;
+urine creatinine;;;;x
+urine creatinine clearance;;;;x
+urine crystals;;;;
+urine culture;;;;
+urine cystine crystals;;;;
+urine density;;;;
+urine epithelial cells;;;;
+urine finely granular cast;;;;
+urine glucose;;;;x
+urine granular cast;;;;
+urine hcg;;;;
+urine hemoglobin;;;;
+urine hyaline cast;;;;
+urine ketones;;;;
+urine leukesterase;;;;
+urine micro;;;;
+urine microalbumin;;;;
+urine microscopic;;;;
+urine mucous;;;;
+urine myoglobin;;;;
+urine nitrite;;;;
+urine organisms;;;;
+urine osmolality;;;;
+urine ph;;;;
+urine potassium;;;;
+urine protein;;;;
+urine rbc clumps;;;;
+urine rbcs;;;;
+urine renal epithelial cells;;;;
+urine sodium;;;;
+urine specific gravity;;;;
+urine spermatazoa;;;;
+urine spermatozoa;;;;
+urine squamous epithelial cells;;;;
+urine sulfonamide crystals;;;;
+urine transitional epithelial cells;;;;
+urine triple phosphate crystals;;;;
+urine urea;;;;
+urine uric acid;;;;
+urine uric acid crystals;;;;
+urine urobilinogen;;;;
+urine volume;;;;
+urine waxy cast;;;;
+urine waxy casts;;;;
+urine wbc clumps;;;;
+urine wbcs;;;;
+urine white blood cell casts;;;;
+urine yeast;;;;
+urine yeast budding;;;;
+urobilinogen;;;;
+vitamin b12;;;;
+vitamin c (ascorbic acid);;;;
+vitamin e;;;;
+was patient fasting?;;;;
+white blood cell (wbc);;;;x

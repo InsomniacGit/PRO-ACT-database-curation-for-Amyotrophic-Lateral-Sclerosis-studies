@@ -42,7 +42,7 @@ DATA_PATH = str(
 
 # Root directory containing external validation files (e.g. Desnuelles test list)
 VALIDATION_PATH = str(
-    Path.home() / "Desktop" / "DATA_PROACT" / "DATA"
+    Path.home() / "Desktop" / "DATA_PROACT" / "VALIDATION"
 )
 
 # Root directory for merged (multi-table) datasets
