@@ -27,24 +27,6 @@ Data:   PROACT dataset (2022-07-29 release)
 
 import pandas as pd
 import numpy as np
-import os
-from pathlib import Path
-
-
-
-# ------------------------------------------------------------------
-# Path configuration
-# ------------------------------------------------------------------
-
-# Root directory for all processed outputs
-data_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "BDDfiltre2")
-
-# Root directory containing raw PROACT CSV exports
-proact_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "2022_07_29_PROACT_ALL_FORMS")
-
-# Create the output subdirectory if it does not already exist
-if not os.path.exists(data_path):
-    os.makedirs(data_path)
 
 
 
@@ -114,10 +96,6 @@ def reorder_family_history(file_path):
     return df
 
 
-df_family = reorder_family_history(proact_path + '/PROACT_FAMILYHISTORY.csv')
-df_family.to_csv(data_path + '/PROACT_FAMILYHISTORY_v2.csv', index=False)
-
-
 
 
 
@@ -152,10 +130,6 @@ def clean_family_history(file_path):
     df.drop(columns=['Family_History_Delta'], errors='ignore', inplace=True)
 
     return df
-
-
-df_family = clean_family_history(data_path + '/PROACT_FAMILYHISTORY_v2.csv')
-df_family.to_csv(data_path + '/PROACT_FAMILYHISTORY_v3.csv', index=False)
 
 
 
@@ -207,10 +181,6 @@ def merge_family_columns(file_path):
     return df
 
 
-df_family = merge_family_columns(data_path + '/PROACT_FAMILYHISTORY_v3.csv')
-df_family.to_csv(data_path + '/PROACT_FAMILYHISTORY_v4.csv', index=False)
-
-
 
 
 
@@ -239,27 +209,25 @@ def list_subjects_with_multiple_lines(file_path):
     """
     df = pd.read_csv(file_path, low_memory=False)
     duplicated_subjects = df['subject_id'][df['subject_id'].duplicated(keep=False)]
+
     return duplicated_subjects.unique().tolist()
 
-
-print("Subject IDs with multiple lines in FAMILYHISTORY:")
-multiple_line_ids = list_subjects_with_multiple_lines(data_path + '/PROACT_FAMILYHISTORY_v4.csv')
-print(multiple_line_ids)
 
 
 # Patients identified above as having multiple records; exported for audit
 # before being resolved by combine_family_history() in stage v5.
-filter_ids = [
-    24755, 27702, 33770, 37171, 43427, 60885, 74899, 93510, 98303, 155551,
-    194137, 211529, 218348, 224639, 228071, 239612, 269593, 376662, 377636,
-    380514, 382892, 398097, 400991, 406412, 413145, 416756, 421158, 423030,
-    423619, 424119, 427558, 430805, 434916, 455263, 484508, 485993, 499055,
-    509862, 525247, 551989, 556823, 569878, 577625, 605404, 757989, 773939,
-    774869, 776467, 827520, 829054, 833579, 844156, 853005, 863694, 874150,
-    885248, 896339, 933971, 941016, 955372,
-]
-
-def filter_subject_ids(file_path, subject_ids):
+def filter_subject_ids(
+        file_path, 
+        subject_ids = [
+            24755, 27702, 33770, 37171, 43427, 60885, 74899, 93510, 98303, 155551,
+            194137, 211529, 218348, 224639, 228071, 239612, 269593, 376662, 377636,
+            380514, 382892, 398097, 400991, 406412, 413145, 416756, 421158, 423030,
+            423619, 424119, 427558, 430805, 434916, 455263, 484508, 485993, 499055,
+            509862, 525247, 551989, 556823, 569878, 577625, 605404, 757989, 773939,
+            774869, 776467, 827520, 829054, 833579, 844156, 853005, 863694, 874150,
+            885248, 896339, 933971, 941016, 955372,
+        ]
+    ):
     """
     Extract the rows corresponding to a specific list of patient IDs.
 
@@ -279,10 +247,6 @@ def filter_subject_ids(file_path, subject_ids):
     """
     df = pd.read_csv(file_path, low_memory=False)
     return df[df['subject_id'].isin(subject_ids)]
-
-
-df_family = filter_subject_ids(data_path + '/PROACT_FAMILYHISTORY_v4.csv', filter_ids)
-df_family.to_csv(data_path + '/PROACT_FAMILYHISTORY_multipleID.csv', index=False)
 
 
 
@@ -335,10 +299,6 @@ def combine_family_history(file_path):
         result_list.append(row_data)
 
     return pd.DataFrame(result_list)
-
-
-df_family = combine_family_history(data_path + '/PROACT_FAMILYHISTORY_v4.csv')
-df_family.to_csv(data_path + '/PROACT_FAMILYHISTORY_v5.csv', index=False)
 
 
 
@@ -433,10 +393,6 @@ def count_neurological_conditions(file_path):
     return df
 
 
-df_family = count_neurological_conditions(data_path + '/PROACT_FAMILYHISTORY_v5.csv')
-df_family.to_csv(data_path + '/PROACT_FAMILYHISTORY_v6.csv', index=False)
-
-
 
 
 
@@ -477,10 +433,6 @@ def convert_family_columns_to_boolean(file_path):
             df[col] = df[col].apply(lambda x: True if x == 1.0 else False)
 
     return df
-
-
-df_family = convert_family_columns_to_boolean(data_path + '/PROACT_FAMILYHISTORY_v6.csv')
-df_family.to_csv(data_path + '/PROACT_FAMILYHISTORY_v7.csv', index=False)
 
 
 
@@ -547,24 +499,6 @@ def create_binary_columns(df, column, prefix):
     return binary_df, unique_values
 
 
-df = pd.read_csv(data_path + '/PROACT_FAMILYHISTORY_v7.csv', low_memory=False)
-
-# Rename for consistency with the naming convention used across other scripts
-df = df.rename(columns={"Neurological_Disease_Other": "Neurological_Disease_Other_Specify"})
-
-# Encode Neurological_Disease as binary indicators
-binary_neuro_df, all_neuros = create_binary_columns(df, "Neurological_Disease", "Neurological_Disease")
-df = pd.concat([df, binary_neuro_df], axis=1)
-df = df.drop(columns=["Neurological_Disease"])
-
-# Neurological_Disease_Other_Specify: values are too sparse to be informative - dropped
-# binary_neuro_other_df, all_neuro_others = create_binary_columns(df, "Neurological_Disease_Other_Specify", "Neurological_Disease_Other_Specify")
-# df = pd.concat([df, binary_neuro_other_df], axis=1)
-df = df.drop(columns=["Neurological_Disease_Other_Specify"])
-
-df.to_csv(data_path + '/PROACT_FAMILYHISTORY_v8.csv', index=False)
-
-
 
 
 
@@ -592,8 +526,97 @@ def rename_all_columns(file_path):
     """
     df = pd.read_csv(file_path, low_memory=False)
     df = df.rename(columns={col: f'FAM_{col}' for col in df.columns if col != 'subject_id'})
+
     return df
 
 
-df_renamed = rename_all_columns(data_path + '/PROACT_FAMILYHISTORY_v8.csv')
-df_renamed.to_csv(data_path + '/PROACT_FAMILYHISTORY_v9.csv', index=False)
+
+
+
+
+
+
+
+
+# ==================================================================
+# ------------------------- PIPELINE EXECUTION ---------------------
+# ==================================================================
+
+def run(DATA_PATH, PROACT_PATH):
+
+    print("\n" * 3)
+    print("=" * 60)
+    print("FAMILYHISTORY PIPELINE")
+    print("=" * 60)
+
+    
+
+    # Stage v2 - Reorder columns into a logical family-relation hierarchy
+    df_family = reorder_family_history(PROACT_PATH + '/PROACT_FAMILYHISTORY.csv')
+    df_family.to_csv(DATA_PATH + '/PROACT_FAMILYHISTORY_v2.csv', index=False)
+
+
+
+    # Stage v3 - Drop empty and uninformative columns
+    df_family = clean_family_history(DATA_PATH + '/PROACT_FAMILYHISTORY_v2.csv')
+    df_family.to_csv(DATA_PATH + '/PROACT_FAMILYHISTORY_v3.csv', index=False)
+
+
+
+    # Stage v4 - Merge maternal/paternal sub-columns into unified columns
+    df_family = merge_family_columns(DATA_PATH + '/PROACT_FAMILYHISTORY_v3.csv')
+    df_family.to_csv(DATA_PATH + '/PROACT_FAMILYHISTORY_v4.csv', index=False)
+
+
+
+    # Diagnostic - Identify patients with multiple records
+    print("Subject IDs with multiple lines in FAMILYHISTORY:")
+    multiple_line_ids = list_subjects_with_multiple_lines(DATA_PATH + '/PROACT_FAMILYHISTORY_v4.csv')
+    print(multiple_line_ids)
+
+    df_family = filter_subject_ids(DATA_PATH + '/PROACT_FAMILYHISTORY_v4.csv')
+    df_family.to_csv(DATA_PATH + '/PROACT_FAMILYHISTORY_multipleID.csv', index=False)
+
+
+
+    # Stage v5 - Resolve duplicate records into one row per patient
+    df_family = combine_family_history(DATA_PATH + '/PROACT_FAMILYHISTORY_v4.csv')
+    df_family.to_csv(DATA_PATH + '/PROACT_FAMILYHISTORY_v5.csv', index=False)
+
+
+
+    # Stage v6 - Count affected family members and propagate ALS label
+    df_family = count_neurological_conditions(DATA_PATH + '/PROACT_FAMILYHISTORY_v5.csv')
+    df_family.to_csv(DATA_PATH + '/PROACT_FAMILYHISTORY_v6.csv', index=False)
+
+
+
+    # Stage v7 - Convert family-member columns to boolean
+    df_family = convert_family_columns_to_boolean(DATA_PATH + '/PROACT_FAMILYHISTORY_v6.csv')
+    df_family.to_csv(DATA_PATH + '/PROACT_FAMILYHISTORY_v7.csv', index=False)
+
+
+
+    # Stage v8 - Encode Neurological_Disease as binary indicator columns
+    df = pd.read_csv(DATA_PATH + '/PROACT_FAMILYHISTORY_v7.csv', low_memory=False)
+
+    # Rename for consistency with the naming convention used across other scripts
+    df = df.rename(columns={"Neurological_Disease_Other": "Neurological_Disease_Other_Specify"})
+
+    # Encode Neurological_Disease as binary indicators
+    binary_neuro_df, all_neuros = create_binary_columns(df, "Neurological_Disease", "Neurological_Disease")
+    df = pd.concat([df, binary_neuro_df], axis=1)
+    df = df.drop(columns=["Neurological_Disease"])
+
+    # Neurological_Disease_Other_Specify: values are too sparse to be informative - dropped
+    # binary_neuro_other_df, all_neuro_others = create_binary_columns(df, "Neurological_Disease_Other_Specify", "Neurological_Disease_Other_Specify")
+    # df = pd.concat([df, binary_neuro_other_df], axis=1)
+    df = df.drop(columns=["Neurological_Disease_Other_Specify"])
+
+    df.to_csv(DATA_PATH + '/PROACT_FAMILYHISTORY_v8.csv', index=False)
+
+
+
+    # Stage v9 - Add 'FAM_' prefix to all feature columns
+    df_renamed = rename_all_columns(DATA_PATH + '/PROACT_FAMILYHISTORY_v8.csv')
+    df_renamed.to_csv(DATA_PATH + '/PROACT_FAMILYHISTORY_v9.csv', index=False)

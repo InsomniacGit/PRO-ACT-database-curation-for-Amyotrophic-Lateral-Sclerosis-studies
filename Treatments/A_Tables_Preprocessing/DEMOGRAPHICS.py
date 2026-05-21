@@ -22,24 +22,6 @@ Data:   PROACT dataset (2022-07-29 release)
 
 import pandas as pd
 import numpy as np
-import os
-from pathlib import Path
-
-
-
-# ------------------------------------------------------------------
-# Path configuration
-# ------------------------------------------------------------------
-
-# Root directory for all processed outputs
-data_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "BDDfiltre2")
-
-# Root directory containing raw PROACT CSV exports
-proact_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "2022_07_29_PROACT_ALL_FORMS")
-
-# Create the output subdirectory if it does not already exist
-if not os.path.exists(data_path):
-    os.makedirs(data_path)
 
 
 
@@ -122,10 +104,6 @@ def create_race_column(file_path):
     return df
 
 
-df_race = create_race_column(proact_path + '/PROACT_DEMOGRAPHICS.csv')
-df_race.to_csv(data_path + '/PROACT_DEMOGRAPHICS_v2.csv', index=False)
-
-
 
 
 
@@ -167,10 +145,6 @@ def age_add(file_path):
     return df
 
 
-df_age = age_add(data_path + '/PROACT_DEMOGRAPHICS_v2.csv')
-df_age.to_csv(data_path + '/PROACT_DEMOGRAPHICS_v3.csv', index=False)
-
-
 
 
 
@@ -208,10 +182,6 @@ def remove_unused_columns_demographics(file_path):
     return df
 
 
-df = remove_unused_columns_demographics(data_path + '/PROACT_DEMOGRAPHICS_v3.csv')
-df.to_csv(data_path + '/PROACT_DEMOGRAPHICS_v4.csv', index=False)
-
-
 
 
 
@@ -236,9 +206,6 @@ def check_unique_lines(file_path):
     duplicated_subjects = df['subject_id'][df['subject_id'].duplicated(keep=False)]
     num_errors = len(duplicated_subjects.unique())
     print(f"Patients with more than one row: {num_errors}")
-
-
-check_unique_lines(data_path + '/PROACT_DEMOGRAPHICS_v4.csv')
 
 
 
@@ -305,21 +272,6 @@ def create_binary_columns(df, column, prefix):
     return binary_df, unique_values
 
 
-df = pd.read_csv(data_path + '/PROACT_DEMOGRAPHICS_v4.csv', low_memory=False)
-
-# Encode Race as binary indicators
-binary_race_df, all_races = create_binary_columns(df, 'Race', 'Race')
-df = pd.concat([df, binary_race_df], axis=1)
-df = df.drop(columns=["Race"])
-
-# Race_Other_Specify: values are too sparse to be informative - dropped
-# binary_race_other_df, all_race_others = create_binary_columns(df, 'Race_Other_Specify', 'Race_Other_Specify')
-# df = pd.concat([df, binary_race_other_df], axis=1)
-df = df.drop(columns=["Race_Other_Specify"])
-
-df.to_csv(data_path + '/PROACT_DEMOGRAPHICS_v5.csv', index=False)
-
-
 
 
 
@@ -347,8 +299,71 @@ def rename_all_columns(file_path):
     """
     df = pd.read_csv(file_path, low_memory=False)
     df = df.rename(columns={col: f'DEM_{col}' for col in df.columns if col != 'subject_id'})
+
     return df
 
 
-df_renamed = rename_all_columns(data_path + '/PROACT_DEMOGRAPHICS_v5.csv')
-df_renamed.to_csv(data_path + '/PROACT_DEMOGRAPHICS_v6.csv', index=False)
+
+
+
+
+
+
+
+
+# ==================================================================
+# ------------------------- PIPELINE EXECUTION ---------------------
+# ==================================================================
+
+def run(DATA_PATH, PROACT_PATH):
+
+    print("\n" * 3)
+    print("=" * 60)
+    print("DEMOGRAPHICS PIPELINE")
+    print("=" * 60)
+
+    
+
+    # Stage v2 - Consolidate binary race columns into a single Race column
+    df_race = create_race_column(PROACT_PATH + '/PROACT_DEMOGRAPHICS.csv')
+    df_race.to_csv(DATA_PATH + '/PROACT_DEMOGRAPHICS_v2.csv', index=False)
+
+
+
+    # Stage v3 - Impute missing Age from Date_of_Birth
+    df_age = age_add(DATA_PATH + '/PROACT_DEMOGRAPHICS_v2.csv')
+    df_age.to_csv(DATA_PATH + '/PROACT_DEMOGRAPHICS_v3.csv', index=False)
+
+
+
+    # Stage v4 - Drop administrative columns and reorder
+    df = remove_unused_columns_demographics(DATA_PATH + '/PROACT_DEMOGRAPHICS_v3.csv')
+    df.to_csv(DATA_PATH + '/PROACT_DEMOGRAPHICS_v4.csv', index=False)
+
+
+
+    # Diagnostic - Check for unexpected duplicate patients
+    check_unique_lines(DATA_PATH + '/PROACT_DEMOGRAPHICS_v4.csv')
+
+
+
+    # Stage v5 - Encode Race as binary indicator columns
+    df = pd.read_csv(DATA_PATH + '/PROACT_DEMOGRAPHICS_v4.csv', low_memory=False)
+
+    # Encode Race as binary indicators
+    binary_race_df, all_races = create_binary_columns(df, 'Race', 'Race')
+    df = pd.concat([df, binary_race_df], axis=1)
+    df = df.drop(columns=["Race"])
+
+    # Race_Other_Specify: values are too sparse to be informative - dropped
+    # binary_race_other_df, all_race_others = create_binary_columns(df, 'Race_Other_Specify', 'Race_Other_Specify')
+    # df = pd.concat([df, binary_race_other_df], axis=1)
+    df = df.drop(columns=["Race_Other_Specify"])
+
+    df.to_csv(DATA_PATH + '/PROACT_DEMOGRAPHICS_v5.csv', index=False)
+
+
+
+    # Stage v6 - Add 'DEM_' prefix to all feature columns
+    df_renamed = rename_all_columns(DATA_PATH + '/PROACT_DEMOGRAPHICS_v5.csv')
+    df_renamed.to_csv(DATA_PATH + '/PROACT_DEMOGRAPHICS_v6.csv', index=False)

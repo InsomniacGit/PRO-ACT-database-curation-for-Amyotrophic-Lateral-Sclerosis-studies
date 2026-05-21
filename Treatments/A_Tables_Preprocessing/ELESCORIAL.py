@@ -21,24 +21,6 @@ Data:   PROACT dataset (2022-07-29 release)
 
 
 import pandas as pd
-import os
-from pathlib import Path
-
-
-
-# ------------------------------------------------------------------
-# Path configuration
-# ------------------------------------------------------------------
-
-# Root directory for all processed outputs
-data_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "BDDfiltre2")
-
-# Root directory containing raw PROACT CSV exports
-proact_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "2022_07_29_PROACT_ALL_FORMS")
-
-# Create the output subdirectory if it does not already exist
-if not os.path.exists(data_path):
-    os.makedirs(data_path)
 
 
 
@@ -73,11 +55,8 @@ def modify_proact_elescorial(file_path):
     """
     df = pd.read_csv(file_path, low_memory=False)
     df = df.drop(columns=['delta_days'], errors='ignore')
+
     return df
-
-
-df = modify_proact_elescorial(proact_path + '/PROACT_ELESCORIAL.csv')
-df.to_csv(data_path + '/PROACT_ELESCORIAL_v2.csv', index=False)
 
 
 
@@ -104,9 +83,6 @@ def check_unique_lines(file_path):
     duplicated_subjects = df['subject_id'][df['subject_id'].duplicated(keep=False)]
     num_errors = len(duplicated_subjects.unique())
     print(f"Patients with more than one row: {num_errors}")
-
-
-check_unique_lines(data_path + '/PROACT_ELESCORIAL_v2.csv')
 
 
 
@@ -136,8 +112,42 @@ def rename_all_columns(file_path):
     """
     df = pd.read_csv(file_path, low_memory=False)
     df = df.rename(columns={col: f'ELE_{col}' for col in df.columns if col != 'subject_id'})
+
     return df
 
 
-df_renamed = rename_all_columns(data_path + '/PROACT_ELESCORIAL_v2.csv')
-df_renamed.to_csv(data_path + '/PROACT_ELESCORIAL_v3.csv', index=False)
+
+
+
+
+
+
+
+
+# ==================================================================
+# ------------------------- PIPELINE EXECUTION ---------------------
+# ==================================================================
+
+def run(DATA_PATH, PROACT_PATH):
+
+    print("\n" * 3)
+    print("=" * 60)
+    print("ELESCORIAL PIPELINE")
+    print("=" * 60)
+
+    
+
+    # Stage v2 - Drop uninformative column
+    df = modify_proact_elescorial(PROACT_PATH + '/PROACT_ELESCORIAL.csv')
+    df.to_csv(DATA_PATH + '/PROACT_ELESCORIAL_v2.csv', index=False)
+
+
+
+    # Diagnostic - Check for unexpected duplicate patients
+    check_unique_lines(DATA_PATH + '/PROACT_ELESCORIAL_v2.csv')
+
+
+
+    # Stage v3 - Add 'ELE_' prefix to all feature columns
+    df_renamed = rename_all_columns(DATA_PATH + '/PROACT_ELESCORIAL_v2.csv')
+    df_renamed.to_csv(DATA_PATH + '/PROACT_ELESCORIAL_v3.csv', index=False)

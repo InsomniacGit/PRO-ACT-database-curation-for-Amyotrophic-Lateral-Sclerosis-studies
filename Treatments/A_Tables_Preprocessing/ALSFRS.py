@@ -23,24 +23,6 @@ Data:   PROACT dataset (2022-07-29 release)
 
 
 import pandas as pd
-import os
-from pathlib import Path
-
-
-
-# ------------------------------------------------------------------
-# Path configuration
-# ------------------------------------------------------------------
-
-# Root directory for all processed outputs
-data_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "BDDfiltre2")
-
-# Root directory containing raw PROACT CSV exports
-proact_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "2022_07_29_PROACT_ALL_FORMS")
-
-# Create the output subdirectory if it does not already exist
-if not os.path.exists(data_path):
-    os.makedirs(data_path)
 
 
 
@@ -109,10 +91,6 @@ def clean_data(csv_file):
     return df
 
 
-cleaned_file = clean_data(proact_path + '/PROACT_ALSFRS.csv')
-cleaned_file.to_csv(data_path + '/PROACT_ALSFRS_v2.csv', index=False)
-
-
 
 
 
@@ -160,10 +138,6 @@ def value_checker(csv_file):
     return df
 
 
-validated_file = value_checker(data_path + '/PROACT_ALSFRS_v2.csv')
-validated_file.to_csv(data_path + '/PROACT_ALSFRS_v3.csv', index=False)
-
-
 
 
 
@@ -171,7 +145,7 @@ validated_file.to_csv(data_path + '/PROACT_ALSFRS_v3.csv', index=False)
 # Stage v4 - Correct arithmetic errors in total scores
 # ------------------------------------------------------------------
 
-def total_score_checker(csv_file):
+def total_score_checker(csv_file, data_path):
     """
     Detect and correct rows where ALSFRS_Total or ALSFRS_R_Total does not
     match the sum of its component items.
@@ -186,8 +160,10 @@ def total_score_checker(csv_file):
 
     Parameters
     ----------
-    csv_file : str
+    csv_file  : str
         Path to PROACT_ALSFRS_v3.csv.
+    data_path : str   
+        Path to the Root directory for all processed outputs
 
     Returns
     -------
@@ -228,10 +204,6 @@ def total_score_checker(csv_file):
     df.loc[incorrect_ALSFRS_R_Total.index, 'ALSFRS_R_Total'] = ALSFRS_R_Total_calculated[incorrect_ALSFRS_R_Total.index]
 
     return df
-
-
-df_corrected_scores = total_score_checker(data_path + '/PROACT_ALSFRS_v3.csv')
-df_corrected_scores.to_csv(data_path + '/PROACT_ALSFRS_v4.csv', index=False)
 
 
 
@@ -282,10 +254,6 @@ def compute_domain_scores(csv_file):
     )
 
     return df
-
-
-domain_scores_file = compute_domain_scores(data_path + '/PROACT_ALSFRS_v4.csv')
-domain_scores_file.to_csv(data_path + '/PROACT_ALSFRS_v5.csv', index=False)
 
 
 
@@ -377,10 +345,6 @@ def evaluate_imputation_strategies(csv_file):
     return df
 
 
-benchmark_results = evaluate_imputation_strategies(data_path + '/PROACT_ALSFRS_v5.csv')
-benchmark_results.to_csv(data_path + '/PROACT_ALSFRS_list_both_score.csv', index=False)
-
-
 
 
 
@@ -417,10 +381,6 @@ def observation_counter_alsfrs(csv_file):
     df = df[cols]
 
     return df
-
-
-df_counter = observation_counter_alsfrs(data_path + '/PROACT_ALSFRS_v5.csv')
-df_counter.to_csv(data_path + '/PROACT_ALSFRS_v6.csv', index=False)
 
 
 
@@ -491,10 +451,6 @@ def impute_total_scores(csv_file):
     return df
 
 
-imputed_file = impute_total_scores(data_path + '/PROACT_ALSFRS_v6.csv')
-imputed_file.to_csv(data_path + '/PROACT_ALSFRS_v6_filled.csv', index=False)
-
-
 
 
 
@@ -555,13 +511,6 @@ def reshape_to_wide_format(csv_file):
     return df_merged
 
 
-reshaped_file = reshape_to_wide_format(data_path + '/PROACT_ALSFRS_v6.csv')
-reshaped_file.to_csv(data_path + '/PROACT_ALSFRS_v7.csv', index=False)
-
-reshaped_imputed_file = reshape_to_wide_format(data_path + '/PROACT_ALSFRS_v6_filled.csv')
-reshaped_imputed_file.to_csv(data_path + '/PROACT_ALSFRS_v7_filled.csv', index=False)
-
-
 
 
 
@@ -592,8 +541,79 @@ def rename_all_columns(csv_file):
     return df
 
 
-df_renamed = rename_all_columns(data_path + '/PROACT_ALSFRS_v7.csv')
-df_renamed.to_csv(data_path + '/PROACT_ALSFRS_v8.csv', index=False)
 
-df_renamed_filled = rename_all_columns(data_path + '/PROACT_ALSFRS_v7_filled.csv')
-df_renamed_filled.to_csv(data_path + '/PROACT_ALSFRS_v8_filled.csv', index=False)
+
+
+
+
+
+
+
+# ==================================================================
+# ------------------------- PIPELINE EXECUTION ---------------------
+# ==================================================================
+
+def run(DATA_PATH, PROACT_PATH):
+
+    print("\n" * 3)
+    print("=" * 60)
+    print("ALSFRS PIPELINE")
+    print("=" * 60)
+
+    
+    
+    # Stage v2 - Clean raw ALSFRS data
+    cleaned_file = clean_data(PROACT_PATH + '/PROACT_ALSFRS.csv')
+    cleaned_file.to_csv(DATA_PATH + '/PROACT_ALSFRS_v2.csv', index=False)
+
+
+
+    # Stage v3 - Remove structurally inconsistent rows
+    validated_file = value_checker(DATA_PATH + '/PROACT_ALSFRS_v2.csv')
+    validated_file.to_csv(DATA_PATH + '/PROACT_ALSFRS_v3.csv', index=False)
+
+
+
+    # Stage v4 - Correct arithmetic errors in total scores
+    df_corrected_scores = total_score_checker(DATA_PATH + '/PROACT_ALSFRS_v3.csv', data_path=DATA_PATH)
+    df_corrected_scores.to_csv(DATA_PATH + '/PROACT_ALSFRS_v4.csv', index=False)
+
+
+
+    # Stage v5 - Compute domain subscores
+    domain_scores_file = compute_domain_scores(DATA_PATH + '/PROACT_ALSFRS_v4.csv')
+    domain_scores_file.to_csv(DATA_PATH + '/PROACT_ALSFRS_v5.csv', index=False)
+
+
+
+    # Diagnostic - Evaluate cross-scale respiratory imputation strategies
+    benchmark_results = evaluate_imputation_strategies(DATA_PATH + '/PROACT_ALSFRS_v5.csv')
+    benchmark_results.to_csv(DATA_PATH + '/PROACT_ALSFRS_list_both_score.csv', index=False)
+
+
+
+    # Stage v6 - Add per-patient observation count
+    df_counter = observation_counter_alsfrs(DATA_PATH + '/PROACT_ALSFRS_v5.csv')
+    df_counter.to_csv(DATA_PATH + '/PROACT_ALSFRS_v6.csv', index=False)
+
+    # Stage v6_filled - Impute missing total scores across scales
+    imputed_file = impute_total_scores(DATA_PATH + '/PROACT_ALSFRS_v6.csv')
+    imputed_file.to_csv(DATA_PATH + '/PROACT_ALSFRS_v6_filled.csv', index=False)
+
+
+
+    # Stage v7 / v7_filled - Reshape to wide format
+    reshaped_file = reshape_to_wide_format(DATA_PATH + '/PROACT_ALSFRS_v6.csv')
+    reshaped_file.to_csv(DATA_PATH + '/PROACT_ALSFRS_v7.csv', index=False)
+
+    reshaped_imputed_file = reshape_to_wide_format(DATA_PATH + '/PROACT_ALSFRS_v6_filled.csv')
+    reshaped_imputed_file.to_csv(DATA_PATH + '/PROACT_ALSFRS_v7_filled.csv', index=False)
+
+
+
+    # Stage v8 / v8_filled - Add 'ALS_' prefix to all feature columns
+    df_renamed = rename_all_columns(DATA_PATH + '/PROACT_ALSFRS_v7.csv')
+    df_renamed.to_csv(DATA_PATH + '/PROACT_ALSFRS_v8.csv', index=False)
+
+    df_renamed_filled = rename_all_columns(DATA_PATH + '/PROACT_ALSFRS_v7_filled.csv')
+    df_renamed_filled.to_csv(DATA_PATH + '/PROACT_ALSFRS_v8_filled.csv', index=False)

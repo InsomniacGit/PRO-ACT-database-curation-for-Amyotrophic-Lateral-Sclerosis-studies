@@ -36,24 +36,7 @@ Data:   PROACT dataset (2022-07-29 release)
 
 
 import pandas as pd
-import os
-from pathlib import Path
 
-
-
-# ------------------------------------------------------------------
-# Path configuration
-# ------------------------------------------------------------------
-
-# Root directory for all processed outputs
-data_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "BDDfiltre2")
-
-# Root directory containing raw PROACT CSV exports
-proact_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "2022_07_29_PROACT_ALL_FORMS")
-
-# Create the output subdirectory if it does not already exist
-if not os.path.exists(data_path):
-    os.makedirs(data_path)
 
 
 
@@ -61,7 +44,6 @@ if not os.path.exists(data_path):
 # //////////////////////////////////////////////////////////////////
 # ------------------------- MUSCLESTRENGTH -------------------------
 # //////////////////////////////////////////////////////////////////
-
 
 
 
@@ -124,9 +106,6 @@ def modify_muscle_strength(file_path):
 
     return df
 
-
-df = modify_muscle_strength(proact_path + '/PROACT_MUSCLESTRENGTH.csv')
-df.to_csv(data_path + '/PROACT_MUSCLESTRENGTH_v2.csv', index=False)
 
 
 
@@ -210,11 +189,6 @@ def group_left_right_muscle_strength_trials(file_path):
     return pd.DataFrame(data_rows)
 
 
-df_muscle_strength = group_left_right_muscle_strength_trials(
-    data_path + '/PROACT_MUSCLESTRENGTH_v2.csv'
-)
-df_muscle_strength.to_csv(data_path + '/PROACT_MUSCLESTRENGTH_v3.csv', index=False)
-
 
 
 
@@ -222,7 +196,7 @@ df_muscle_strength.to_csv(data_path + '/PROACT_MUSCLESTRENGTH_v3.csv', index=Fal
 # Stage v4 - Add best-trial summary and laterality feature columns
 # ------------------------------------------------------------------
 
-def add_max_trials_columns_muscle_strength(file_path):
+def add_max_trials_columns_muscle_strength(file_path, data_path):
     """
     Derive four summary features per test/visit row and join DominantHand
     from the hand grip strength pipeline output.
@@ -248,6 +222,8 @@ def add_max_trials_columns_muscle_strength(file_path):
     ----------
     file_path : str
         Path to PROACT_MUSCLESTRENGTH_v3.csv.
+    data_path : str   
+        Path to the Root directory for all processed outputs
 
     Returns
     -------
@@ -335,11 +311,6 @@ def add_max_trials_columns_muscle_strength(file_path):
 
     return df
 
-
-df_muscle_strength = add_max_trials_columns_muscle_strength(
-    data_path + '/PROACT_MUSCLESTRENGTH_v3.csv'
-)
-df_muscle_strength.to_csv(data_path + '/PROACT_MUSCLESTRENGTH_v4.csv', index=False)
 
 
 
@@ -455,11 +426,6 @@ def regrouper_par_subject_id_ms_delta(csv_file):
     return df_wide
 
 
-df_muscle_strength = regrouper_par_subject_id_ms_delta(
-    data_path + '/PROACT_MUSCLESTRENGTH_v4.csv'
-)
-df_muscle_strength.to_csv(data_path + '/PROACT_MUSCLESTRENGTH_v5.csv', index=False)
-
 
 
 
@@ -496,11 +462,6 @@ def observation_counter_muscle_strength(file_path):
 
     return df
 
-
-df_muscle_strength = observation_counter_muscle_strength(
-    data_path + '/PROACT_MUSCLESTRENGTH_v5.csv'
-)
-df_muscle_strength.to_csv(data_path + '/PROACT_MUSCLESTRENGTH_v6.csv', index=False)
 
 
 
@@ -634,9 +595,6 @@ def reshape_to_fully_wide_format(csv_file):
     return df_grouped
 
 
-df_final = reshape_to_fully_wide_format(data_path + '/PROACT_MUSCLESTRENGTH_v6.csv')
-df_final.to_csv(data_path + '/PROACT_MUSCLESTRENGTH_v7.csv', index=False)
-
 
 
 
@@ -667,5 +625,72 @@ def rename_all_columns(file_path):
     return df
 
 
-df_renamed = rename_all_columns(data_path + '/PROACT_MUSCLESTRENGTH_v7.csv')
-df_renamed.to_csv(data_path + '/PROACT_MUSCLESTRENGTH_v8.csv', index=False)
+
+
+
+
+
+
+
+
+# ==================================================================
+# ------------------------- PIPELINE EXECUTION ---------------------
+# ==================================================================
+
+def run(DATA_PATH, PROACT_PATH):
+
+    print("\n" * 3)
+    print("=" * 60)
+    print("MUSCLESTRENGTH PIPELINE")
+    print("=" * 60)
+
+    
+
+    # Stage v2 - Drop constant columns and normalise values
+    df = modify_muscle_strength(PROACT_PATH + '/PROACT_MUSCLESTRENGTH.csv')
+    df.to_csv(DATA_PATH + '/PROACT_MUSCLESTRENGTH_v2.csv', index=False)
+
+
+
+    # Stage v3 - Pivot laterality and trial rows into one row per test/visit
+    df_muscle_strength = group_left_right_muscle_strength_trials(
+        DATA_PATH + '/PROACT_MUSCLESTRENGTH_v2.csv'
+    )
+    df_muscle_strength.to_csv(DATA_PATH + '/PROACT_MUSCLESTRENGTH_v3.csv', index=False)
+
+
+
+    # Stage v4 - Add best-trial summary and laterality feature columns
+    df_muscle_strength = add_max_trials_columns_muscle_strength(
+        DATA_PATH + '/PROACT_MUSCLESTRENGTH_v3.csv',
+        data_path=DATA_PATH
+    )
+    df_muscle_strength.to_csv(DATA_PATH + '/PROACT_MUSCLESTRENGTH_v4.csv', index=False)
+
+
+
+    # Stage v5 - Pivot test/location combinations into one row per visit
+    df_muscle_strength = regrouper_par_subject_id_ms_delta(
+        DATA_PATH + '/PROACT_MUSCLESTRENGTH_v4.csv'
+    )
+    df_muscle_strength.to_csv(DATA_PATH + '/PROACT_MUSCLESTRENGTH_v5.csv', index=False)
+
+
+
+    # Stage v6 - Add per-patient observation count
+    df_muscle_strength = observation_counter_muscle_strength(
+        DATA_PATH + '/PROACT_MUSCLESTRENGTH_v5.csv'
+    )
+    df_muscle_strength.to_csv(DATA_PATH + '/PROACT_MUSCLESTRENGTH_v6.csv', index=False)
+
+
+
+    # Stage v7 - Reshape to fully wide format
+    df_final = reshape_to_fully_wide_format(DATA_PATH + '/PROACT_MUSCLESTRENGTH_v6.csv')
+    df_final.to_csv(DATA_PATH + '/PROACT_MUSCLESTRENGTH_v7.csv', index=False)
+
+
+
+    # Stage v8 - Add 'MUS_' prefix to all feature columns
+    df_renamed = rename_all_columns(DATA_PATH + '/PROACT_MUSCLESTRENGTH_v7.csv')
+    df_renamed.to_csv(DATA_PATH + '/PROACT_MUSCLESTRENGTH_v8.csv', index=False)

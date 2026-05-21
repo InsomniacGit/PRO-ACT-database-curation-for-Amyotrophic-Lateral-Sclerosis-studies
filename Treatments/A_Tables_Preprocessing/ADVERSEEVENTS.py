@@ -23,24 +23,6 @@ Data:   PROACT dataset (2022-07-29 release)
 import pandas as pd
 import numpy as np
 import re
-import os
-from pathlib import Path
-
-
-
-# ------------------------------------------------------------------
-# Path configuration
-# ------------------------------------------------------------------
-
-# Root directory for all processed outputs
-data_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "BDDfiltre2")
-
-# Root directory containing raw PROACT CSV exports
-proact_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "2022_07_29_PROACT_ALL_FORMS")
-
-# Create the output subdirectory if it does not already exist
-if not os.path.exists(data_path):
-    os.makedirs(data_path)
 
 
 
@@ -145,26 +127,6 @@ def list_adverse_events(csv_file):
     )
 
 
-# Generate prevalence summary tables and save them as reference files
-(
-    df_lowest_level_term,
-    df_preferred_term,
-    df_high_level_term,
-    df_high_level_group_term,
-    df_system_organ_class,
-    df_soc_abbreviation,
-    df_soc_code,
-) = list_adverse_events(proact_path + '/PROACT_ADVERSEEVENTS.csv')
-
-df_lowest_level_term.to_csv(    data_path + '/PROACT_ADVERSEEVENTS_list_lowest_level_term.csv',     index=False)
-df_preferred_term.to_csv(       data_path + '/PROACT_ADVERSEEVENTS_list_preferred_term.csv',        index=False)
-df_high_level_term.to_csv(      data_path + '/PROACT_ADVERSEEVENTS_list_high_level_term.csv',       index=False)
-df_high_level_group_term.to_csv(data_path + '/PROACT_ADVERSEEVENTS_list_high_level_group_term.csv', index=False)
-df_system_organ_class.to_csv(   data_path + '/PROACT_ADVERSEEVENTS_list_system_organ_class.csv',    index=False)
-df_soc_abbreviation.to_csv(     data_path + '/PROACT_ADVERSEEVENTS_list_soc_abbreviation.csv',      index=False)
-df_soc_code.to_csv(             data_path + '/PROACT_ADVERSEEVENTS_list_soc_code.csv',              index=False)
-
-
 
 
 
@@ -225,10 +187,6 @@ def clean_adverse_events(csv_file):
     return df
 
 
-df_cleaned_adverse = clean_adverse_events(proact_path + '/PROACT_ADVERSEEVENTS.csv')
-df_cleaned_adverse.to_csv(data_path + '/PROACT_ADVERSEEVENTS_v2.csv', index=False)
-
-
 
 
 
@@ -236,7 +194,7 @@ df_cleaned_adverse.to_csv(data_path + '/PROACT_ADVERSEEVENTS_v2.csv', index=Fals
 # Stage v3 - Filter rare adverse events by prevalence threshold
 # ------------------------------------------------------------------
 
-def filter_adverse_events_by_completeness(csv_file, threshold):
+def filter_adverse_events_by_completeness(csv_file, threshold, data_path):
     """
     Set to NaN any term that is reported by fewer than `threshold` percent
     of the total cohort, then drop rows where all five classification columns
@@ -252,6 +210,7 @@ def filter_adverse_events_by_completeness(csv_file, threshold):
     ----------
     csv_file  : str   Path to PROACT_ADVERSEEVENTS_v2.csv.
     threshold : float Minimum patient prevalence (%) required to keep a term.
+    data_path : str   Path to the Root directory for all processed outputs
 
     Returns
     -------
@@ -295,12 +254,6 @@ def filter_adverse_events_by_completeness(csv_file, threshold):
     return df
 
 
-df_filtered_adverse = filter_adverse_events_by_completeness(
-    data_path + '/PROACT_ADVERSEEVENTS_v2.csv', threshold=5
-)
-df_filtered_adverse.to_csv(data_path + '/PROACT_ADVERSEEVENTS_v3.csv', index=False)
-
-
 
 
 
@@ -337,10 +290,6 @@ def observation_count_adverse(csv_file):
     df = df[cols]
 
     return df
-
-
-df_adversevenent = observation_count_adverse(data_path + '/PROACT_ADVERSEEVENTS_v3.csv')
-df_adversevenent.to_csv(data_path + '/PROACT_ADVERSEEVENTS_v4.csv', index=False)
 
 
 
@@ -398,10 +347,6 @@ def adversevent_count(csv_file):
     df = df[cols]
 
     return df
-
-
-df_adversevenent_count = adversevent_count(data_path + '/PROACT_ADVERSEEVENTS_v4.csv')
-df_adversevenent_count.to_csv(data_path + '/PROACT_ADVERSEEVENTS_v5.csv', index=False)
 
 
 
@@ -525,10 +470,6 @@ def create_boolean_columns(csv_file):
     return df_boolean
 
 
-df_boolean_adverse = create_boolean_columns(data_path + '/PROACT_ADVERSEEVENTS_v5.csv')
-df_boolean_adverse.to_csv(data_path + '/PROACT_ADVERSEEVENTS_v6.csv', index=False)
-
-
 
 
 
@@ -557,5 +498,80 @@ def rename_all_columns(csv_file):
     return df
 
 
-df_renamed = rename_all_columns(data_path + '/PROACT_ADVERSEEVENTS_v6.csv')
-df_renamed.to_csv(data_path + '/PROACT_ADVERSEEVENTS_v7.csv', index=False)
+
+
+
+
+
+
+
+# ==================================================================
+# ------------------------- PIPELINE EXECUTION ---------------------
+# ==================================================================
+
+def run(DATA_PATH, PROACT_PATH):
+
+    print("\n" * 3)
+    print("=" * 60)
+    print("ADVERSEEVENTS PIPELINE")
+    print("=" * 60)
+
+
+
+    # Prevalence reference - Adverse event patient counts (MedDRA levels)
+    # Generate prevalence summary tables and save them as reference files
+    (
+        df_lowest_level_term,
+        df_preferred_term,
+        df_high_level_term,
+        df_high_level_group_term,
+        df_system_organ_class,
+        df_soc_abbreviation,
+        df_soc_code,
+    ) = list_adverse_events(PROACT_PATH + '/PROACT_ADVERSEEVENTS.csv')
+
+    df_lowest_level_term.to_csv(    DATA_PATH + '/PROACT_ADVERSEEVENTS_list_lowest_level_term.csv',     index=False)
+    df_preferred_term.to_csv(       DATA_PATH + '/PROACT_ADVERSEEVENTS_list_preferred_term.csv',        index=False)
+    df_high_level_term.to_csv(      DATA_PATH + '/PROACT_ADVERSEEVENTS_list_high_level_term.csv',       index=False)
+    df_high_level_group_term.to_csv(DATA_PATH + '/PROACT_ADVERSEEVENTS_list_high_level_group_term.csv', index=False)
+    df_system_organ_class.to_csv(   DATA_PATH + '/PROACT_ADVERSEEVENTS_list_system_organ_class.csv',    index=False)
+    df_soc_abbreviation.to_csv(     DATA_PATH + '/PROACT_ADVERSEEVENTS_list_soc_abbreviation.csv',      index=False)
+    df_soc_code.to_csv(             DATA_PATH + '/PROACT_ADVERSEEVENTS_list_soc_code.csv',              index=False)
+
+
+
+    # Stage v2 - Clean raw adverse events
+    df_cleaned_adverse = clean_adverse_events(PROACT_PATH + '/PROACT_ADVERSEEVENTS.csv')
+    df_cleaned_adverse.to_csv(DATA_PATH + '/PROACT_ADVERSEEVENTS_v2.csv', index=False)
+
+
+
+    # Stage v3 - Filter rare adverse events by prevalence threshold
+    df_filtered_adverse = filter_adverse_events_by_completeness(
+        DATA_PATH + '/PROACT_ADVERSEEVENTS_v2.csv', threshold=5, data_path=DATA_PATH
+    )
+    df_filtered_adverse.to_csv(DATA_PATH + '/PROACT_ADVERSEEVENTS_v3.csv', index=False)
+
+
+
+    # Stage v4 - Add per-patient observation count
+    df_adversevenent = observation_count_adverse(DATA_PATH + '/PROACT_ADVERSEEVENTS_v3.csv')
+    df_adversevenent.to_csv(DATA_PATH + '/PROACT_ADVERSEEVENTS_v4.csv', index=False)
+
+
+
+    # Stage v5 - Add per-patient unique adverse event counts
+    df_adversevenent_count = adversevent_count(DATA_PATH + '/PROACT_ADVERSEEVENTS_v4.csv')
+    df_adversevenent_count.to_csv(DATA_PATH + '/PROACT_ADVERSEEVENTS_v5.csv', index=False)
+
+
+
+    # Stage v6 - Encode adverse events as binary indicator columns
+    df_boolean_adverse = create_boolean_columns(DATA_PATH + '/PROACT_ADVERSEEVENTS_v5.csv')
+    df_boolean_adverse.to_csv(DATA_PATH + '/PROACT_ADVERSEEVENTS_v6.csv', index=False)
+
+
+
+    # Stage v7 - Add 'ADV_' prefix to all feature columns
+    df_renamed = rename_all_columns(DATA_PATH + '/PROACT_ADVERSEEVENTS_v6.csv')
+    df_renamed.to_csv(DATA_PATH + '/PROACT_ADVERSEEVENTS_v7.csv', index=False)

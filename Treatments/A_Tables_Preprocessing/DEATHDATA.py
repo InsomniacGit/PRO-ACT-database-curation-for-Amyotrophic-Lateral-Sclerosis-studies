@@ -17,24 +17,6 @@ Data:   PROACT dataset (2022-07-29 release)
 
 
 import pandas as pd
-import os
-from pathlib import Path
-
-
-
-# ------------------------------------------------------------------
-# Path configuration
-# ------------------------------------------------------------------
-
-# Root directory for all processed outputs
-data_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "BDDfiltre2")
-
-# Root directory containing raw PROACT CSV exports
-proact_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "2022_07_29_PROACT_ALL_FORMS")
-
-# Create the output subdirectory if it does not already exist
-if not os.path.exists(data_path):
-    os.makedirs(data_path)
 
 
 
@@ -82,10 +64,6 @@ def remove_duplicates(file_path):
     return df_cleaned
 
 
-df_cleaned = remove_duplicates(proact_path + '/PROACT_DEATHDATA.csv')
-df_cleaned.to_csv(data_path + '/PROACT_DEATHDATA_v2.csv', index=False)
-
-
 
 
 
@@ -113,8 +91,37 @@ def rename_all_columns(file_path):
     """
     df = pd.read_csv(file_path, low_memory=False)
     df = df.rename(columns={col: f'DEA_{col}' for col in df.columns if col != 'subject_id'})
+
     return df
 
 
-df_renamed = rename_all_columns(data_path + '/PROACT_DEATHDATA_v2.csv')
-df_renamed.to_csv(data_path + '/PROACT_DEATHDATA_v3.csv', index=False)
+
+
+
+
+
+
+
+
+# ==================================================================
+# ------------------------- PIPELINE EXECUTION ---------------------
+# ==================================================================
+
+def run(DATA_PATH, PROACT_PATH):
+
+    print("\n" * 3)
+    print("=" * 60)
+    print("DEATHDATA PIPELINE")
+    print("=" * 60)
+
+    
+
+    # Stage v2 - Remove patients with duplicate records
+    df_cleaned = remove_duplicates(PROACT_PATH + '/PROACT_DEATHDATA.csv')
+    df_cleaned.to_csv(DATA_PATH + '/PROACT_DEATHDATA_v2.csv', index=False)
+
+
+
+    # Stage v3 - Add 'DEA_' prefix to all feature columns
+    df_renamed = rename_all_columns(DATA_PATH + '/PROACT_DEATHDATA_v2.csv')
+    df_renamed.to_csv(DATA_PATH + '/PROACT_DEATHDATA_v3.csv', index=False)

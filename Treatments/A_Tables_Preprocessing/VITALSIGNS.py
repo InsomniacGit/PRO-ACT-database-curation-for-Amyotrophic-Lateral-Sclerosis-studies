@@ -29,24 +29,7 @@ Data:   PROACT dataset (2022-07-29 release)
 
 
 import pandas as pd
-import os
-from pathlib import Path
 
-
-
-# ------------------------------------------------------------------
-# Path configuration
-# ------------------------------------------------------------------
-
-# Root directory for all processed outputs
-data_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "BDDfiltre2")
-
-# Root directory containing raw PROACT CSV exports
-proact_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "2022_07_29_PROACT_ALL_FORMS")
-
-# Create the output subdirectory if it does not already exist
-if not os.path.exists(data_path):
-    os.makedirs(data_path)
 
 
 
@@ -54,7 +37,6 @@ if not os.path.exists(data_path):
 # //////////////////////////////////////////////////////////////
 # ------------------------- VITALSIGNS -------------------------
 # //////////////////////////////////////////////////////////////
-
 
 
 
@@ -112,9 +94,6 @@ def clean_vital_signs(csv_file):
 
     return df
 
-
-df_vital_signs = clean_vital_signs(proact_path + '/PROACT_VITALSIGNS.csv')
-df_vital_signs.to_csv(data_path + '/PROACT_VITALSIGNS_v2.csv', index=False)
 
 
 
@@ -176,9 +155,6 @@ def convert_vital_signs(csv_file):
 
     return df
 
-
-df_vital_signs = convert_vital_signs(data_path + '/PROACT_VITALSIGNS_v2.csv')
-df_vital_signs.to_csv(data_path + '/PROACT_VITALSIGNS_v3.csv', index=False)
 
 
 
@@ -248,9 +224,6 @@ def rename_vital_signs(csv_file):
     return df
 
 
-df_vital_signs = rename_vital_signs(data_path + '/PROACT_VITALSIGNS_v3.csv')
-df_vital_signs.to_csv(data_path + '/PROACT_VITALSIGNS_v4.csv', index=False)
-
 
 
 
@@ -289,9 +262,6 @@ def observation_counter_vital_signs(file_path):
 
     return df
 
-
-df_vital_signs = observation_counter_vital_signs(data_path + '/PROACT_VITALSIGNS_v4.csv')
-df_vital_signs.to_csv(data_path + '/PROACT_VITALSIGNS_v5.csv', index=False)
 
 
 
@@ -399,9 +369,6 @@ def reshape_to_wide_format(csv_file):
     return pd.DataFrame(result)
 
 
-df_vital_signs_wide = reshape_to_wide_format(data_path + '/PROACT_VITALSIGNS_v5.csv')
-df_vital_signs_wide.to_csv(data_path + '/PROACT_VITALSIGNS_v6.csv', index=False)
-
 
 
 
@@ -429,8 +396,61 @@ def rename_all_columns(file_path):
     """
     df = pd.read_csv(file_path, low_memory=False)
     df = df.rename(columns={col: f'VIT_{col}' for col in df.columns if col != 'subject_id'})
+
     return df
 
 
-df_renamed = rename_all_columns(data_path + '/PROACT_VITALSIGNS_v6.csv')
-df_renamed.to_csv(data_path + '/PROACT_VITALSIGNS_v7.csv', index=False)
+
+
+
+
+
+
+
+
+# ==================================================================
+# ------------------------- PIPELINE EXECUTION ---------------------
+# ==================================================================
+
+def run(DATA_PATH, PROACT_PATH):
+
+    print("\n" * 3)
+    print("=" * 60)
+    print("VITALSIGNS PIPELINE")
+    print("=" * 60)
+
+    
+
+    # Stage v2 - Drop unit columns and encode units in measurement column names
+    df_vital_signs = clean_vital_signs(PROACT_PATH + '/PROACT_VITALSIGNS.csv')
+    df_vital_signs.to_csv(DATA_PATH + '/PROACT_VITALSIGNS_v2.csv', index=False)
+
+
+
+    # Stage v3 - Convert Height and Weight to metric units
+    df_vital_signs = convert_vital_signs(DATA_PATH + '/PROACT_VITALSIGNS_v2.csv')
+    df_vital_signs.to_csv(DATA_PATH + '/PROACT_VITALSIGNS_v3.csv', index=False)
+
+
+
+    # Stage v4 - Encode units in positional blood pressure and pulse column names
+    df_vital_signs = rename_vital_signs(DATA_PATH + '/PROACT_VITALSIGNS_v3.csv')
+    df_vital_signs.to_csv(DATA_PATH + '/PROACT_VITALSIGNS_v4.csv', index=False)
+
+
+
+    # Stage v5 - Add per-patient observation count
+    df_vital_signs = observation_counter_vital_signs(DATA_PATH + '/PROACT_VITALSIGNS_v4.csv')
+    df_vital_signs.to_csv(DATA_PATH + '/PROACT_VITALSIGNS_v5.csv', index=False)
+
+
+
+    # Stage v6 - Reshape to wide format
+    df_vital_signs_wide = reshape_to_wide_format(DATA_PATH + '/PROACT_VITALSIGNS_v5.csv')
+    df_vital_signs_wide.to_csv(DATA_PATH + '/PROACT_VITALSIGNS_v6.csv', index=False)
+
+
+
+    # Stage v7 - Add 'VIT_' prefix to all feature columns
+    df_renamed = rename_all_columns(DATA_PATH + '/PROACT_VITALSIGNS_v6.csv')
+    df_renamed.to_csv(DATA_PATH + '/PROACT_VITALSIGNS_v7.csv', index=False)

@@ -24,24 +24,6 @@ Data:   PROACT dataset (2022-07-29 release)
 
 import pandas as pd
 import numpy as np
-import os
-from pathlib import Path
-
-
-
-# ------------------------------------------------------------------
-# Path configuration
-# ------------------------------------------------------------------
-
-# Root directory for all processed outputs
-data_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "BDDfiltre2")
-
-# Root directory containing raw PROACT CSV exports
-proact_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "2022_07_29_PROACT_ALL_FORMS")
-
-# Create the output subdirectory if it does not already exist
-if not os.path.exists(data_path):
-    os.makedirs(data_path)
 
 
 
@@ -76,7 +58,8 @@ if not os.path.exists(data_path):
 #         subject_ids_multiple_values = non_null_values[non_null_values > 1].index.tolist()
 #         if subject_ids_multiple_values:
 #             print(f'Column "{col}" has multiple non-null values for the same subject_id: {subject_ids_multiple_values}')
-# display_duplicated_subjects(proact_path + '/PROACT_ALSHISTORY.csv')
+
+
 
 def group_by_subject_id(csv_file):
     """
@@ -121,10 +104,6 @@ def group_by_subject_id(csv_file):
     df_final = pd.DataFrame(result_list)
 
     return df_final
-
-
-df_grouped = group_by_subject_id(proact_path + '/PROACT_ALSHISTORY.csv')
-df_grouped.to_csv(data_path + '/PROACT_ALSHISTORY_v2.csv', index=False)
 
 
 
@@ -209,10 +188,6 @@ def impute_site_of_onset(csv_file):
     return df
 
 
-df_alshistory_cleaned = impute_site_of_onset(data_path + '/PROACT_ALSHISTORY_v2.csv')
-df_alshistory_cleaned.to_csv(data_path + '/PROACT_ALSHISTORY_v3.csv', index=False)
-
-
 
 
 
@@ -255,10 +230,6 @@ def correct_onset_diagnosis(csv_file):
     return df
 
 
-df_corrected = correct_onset_diagnosis(data_path + '/PROACT_ALSHISTORY_v3.csv')
-df_corrected.to_csv(data_path + '/PROACT_ALSHISTORY_v4.csv', index=False)
-
-
 
 
 
@@ -298,6 +269,7 @@ def binary_site_of_onset(csv_file):
     df = df.drop(columns=['Site_of_Onset'])
 
     return df
+
 
 
 def create_binary_columns(df, column, prefix):
@@ -358,27 +330,6 @@ def create_binary_columns(df, column, prefix):
     return binary_df, unique_values
 
 
-# Apply binary encoding to Site_of_Onset
-df = binary_site_of_onset(data_path + '/PROACT_ALSHISTORY_v4.csv')
-
-# Encode Symptom as binary indicators
-binary_symptom_df, all_symptoms = create_binary_columns(df, "Symptom", "Symptom")
-df = pd.concat([df, binary_symptom_df], axis=1)
-df = df.drop(columns=["Symptom"])
-
-# Symptom_Other_Specify: values are too sparse to be informative - dropped
-# binary_sym_other_df, all_other_symptoms = create_binary_columns(df, "Symptom_Other_Specify", "Symptom_Other_Specify")
-# df = pd.concat([df, binary_sym_other_df], axis=1)
-df = df.drop(columns=["Symptom_Other_Specify"])
-
-# Location: values are too sparse to be informative - dropped
-# binary_location_df, all_locations = create_binary_columns(df, "Location", "Location")
-# df = pd.concat([df, binary_location_df], axis=1)
-df = df.drop(columns=["Location"])
-
-df.to_csv(data_path + '/PROACT_ALSHISTORY_v5.csv', index=False)
-
-
 
 
 
@@ -409,5 +360,73 @@ def rename_all_columns(csv_file):
     return df
 
 
-df_renamed = rename_all_columns(data_path + '/PROACT_ALSHISTORY_v5.csv')
-df_renamed.to_csv(data_path + '/PROACT_ALSHISTORY_v6.csv', index=False)
+
+
+
+
+
+
+
+
+# ==================================================================
+# ------------------------- PIPELINE EXECUTION ---------------------
+# ==================================================================
+
+def run(DATA_PATH, PROACT_PATH):
+
+    print("\n" * 3)
+    print("=" * 60)
+    print("ALSHISTORY PIPELINE")
+    print("=" * 60)
+
+    
+
+    # Exploratory analysis commented before v2 - shows that only three columns have multiple non-null values across rows for the same patient_id
+    # display_duplicated_subjects(PROACT_PATH + '/PROACT_ALSHISTORY.csv')
+
+
+
+    # Stage v2 - Consolidate duplicate rows into one row per patient
+    df_grouped = group_by_subject_id(PROACT_PATH + '/PROACT_ALSHISTORY.csv')
+    df_grouped.to_csv(DATA_PATH + '/PROACT_ALSHISTORY_v2.csv', index=False)
+
+
+
+    # Stage v3 - Clean and impute Site_of_Onset
+    df_alshistory_cleaned = impute_site_of_onset(DATA_PATH + '/PROACT_ALSHISTORY_v2.csv')
+    df_alshistory_cleaned.to_csv(DATA_PATH + '/PROACT_ALSHISTORY_v3.csv', index=False)
+
+
+
+    # Stage v4 - Correct inverted Onset_Delta / Diagnosis_Delta pairs
+    df_corrected = correct_onset_diagnosis(DATA_PATH + '/PROACT_ALSHISTORY_v3.csv')
+    df_corrected.to_csv(DATA_PATH + '/PROACT_ALSHISTORY_v4.csv', index=False)
+
+
+
+    # Stage v5 - Encode categorical columns as binary indicators
+    # Apply binary encoding to Site_of_Onset
+    df = binary_site_of_onset(DATA_PATH + '/PROACT_ALSHISTORY_v4.csv')
+
+    # Encode Symptom as binary indicators
+    binary_symptom_df, all_symptoms = create_binary_columns(df, "Symptom", "Symptom")
+    df = pd.concat([df, binary_symptom_df], axis=1)
+    df = df.drop(columns=["Symptom"])
+
+    # Symptom_Other_Specify: values are too sparse to be informative - dropped
+    # binary_sym_other_df, all_other_symptoms = create_binary_columns(df, "Symptom_Other_Specify", "Symptom_Other_Specify")
+    # df = pd.concat([df, binary_sym_other_df], axis=1)
+    df = df.drop(columns=["Symptom_Other_Specify"])
+
+    # Location: values are too sparse to be informative - dropped
+    # binary_location_df, all_locations = create_binary_columns(df, "Location", "Location")
+    # df = pd.concat([df, binary_location_df], axis=1)
+    df = df.drop(columns=["Location"])
+
+    df.to_csv(DATA_PATH + '/PROACT_ALSHISTORY_v5.csv', index=False)
+
+
+
+    # Stage v6 - Add 'HIS_' prefix to all feature columns
+    df_renamed = rename_all_columns(DATA_PATH + '/PROACT_ALSHISTORY_v5.csv')
+    df_renamed.to_csv(DATA_PATH + '/PROACT_ALSHISTORY_v6.csv', index=False)

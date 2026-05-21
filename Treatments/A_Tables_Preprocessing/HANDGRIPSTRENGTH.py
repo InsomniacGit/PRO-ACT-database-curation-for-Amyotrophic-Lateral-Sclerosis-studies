@@ -28,24 +28,6 @@ Data:   PROACT dataset (2022-07-29 release)
 
 
 import pandas as pd
-import os
-from pathlib import Path
-
-
-
-# ------------------------------------------------------------------
-# Path configuration
-# ------------------------------------------------------------------
-
-# Root directory for all processed outputs
-data_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "BDDfiltre2")
-
-# Root directory containing raw PROACT CSV exports
-proact_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "2022_07_29_PROACT_ALL_FORMS")
-
-# Create the output subdirectory if it does not already exist
-if not os.path.exists(data_path):
-    os.makedirs(data_path)
 
 
 
@@ -85,11 +67,8 @@ def modify_handgrip_strength(file_path):
     """
     df = pd.read_csv(file_path, low_memory=False)
     df = df.drop(columns=['Test_Name', 'Test_Category', 'Test_Location', 'Test_Unit'])
+
     return df
-
-
-df = modify_handgrip_strength(proact_path + '/PROACT_HANDGRIPSTRENGTH.csv')
-df.to_csv(data_path + '/PROACT_HANDGRIPSTRENGTH_v2.csv', index=False)
 
 
 
@@ -143,10 +122,6 @@ def correct_test_trial(file_path):
     df['Test_trial'] = df['Test_trial'].astype(int)
 
     return df
-
-
-df_handgrip = correct_test_trial(data_path + '/PROACT_HANDGRIPSTRENGTH_v2.csv')
-df_handgrip.to_csv(data_path + '/PROACT_HANDGRIPSTRENGTH_v3.csv', index=False)
 
 
 
@@ -230,10 +205,6 @@ def regroup_left_right_trials_handgrip(file_path):
     return pd.DataFrame(data_rows)
 
 
-df_handgrip = regroup_left_right_trials_handgrip(data_path + '/PROACT_HANDGRIPSTRENGTH_v3.csv')
-df_handgrip.to_csv(data_path + '/PROACT_HANDGRIPSTRENGTH_v4.csv', index=False)
-
-
 
 
 
@@ -271,10 +242,6 @@ def observation_counter_handgrip(file_path):
     df = df[cols]
 
     return df
-
-
-df_handgrip = observation_counter_handgrip(data_path + '/PROACT_HANDGRIPSTRENGTH_v4.csv')
-df_handgrip.to_csv(data_path + '/PROACT_HANDGRIPSTRENGTH_v5.csv', index=False)
 
 
 
@@ -377,10 +344,6 @@ def add_max_trials_columns_handgrip(file_path):
     return df
 
 
-df_handgrip = add_max_trials_columns_handgrip(data_path + '/PROACT_HANDGRIPSTRENGTH_v5.csv')
-df_handgrip.to_csv(data_path + '/PROACT_HANDGRIPSTRENGTH_v6.csv', index=False)
-
-
 
 
 
@@ -466,10 +429,6 @@ def reshape_to_wide_format(csv_file):
     return pd.DataFrame(rows)
 
 
-df_handgrip = reshape_to_wide_format(data_path + '/PROACT_HANDGRIPSTRENGTH_v6.csv')
-df_handgrip.to_csv(data_path + '/PROACT_HANDGRIPSTRENGTH_v7.csv', index=False)
-
-
 
 
 
@@ -497,8 +456,67 @@ def rename_all_columns(file_path):
     """
     df = pd.read_csv(file_path, low_memory=False)
     df = df.rename(columns={col: f'HAN_{col}' for col in df.columns if col != 'subject_id'})
+
     return df
 
 
-df_renamed = rename_all_columns(data_path + '/PROACT_HANDGRIPSTRENGTH_v7.csv')
-df_renamed.to_csv(data_path + '/PROACT_HANDGRIPSTRENGTH_v8.csv', index=False)
+
+
+
+
+
+
+
+
+# ==================================================================
+# ------------------------- PIPELINE EXECUTION ---------------------
+# ==================================================================
+
+def run(DATA_PATH, PROACT_PATH):
+
+    print("\n" * 3)
+    print("=" * 60)
+    print("HANDGRIPSTRENGTH PIPELINE")
+    print("=" * 60)
+
+    
+
+    # Stage v2 - Drop administrative metadata columns
+    df = modify_handgrip_strength(PROACT_PATH + '/PROACT_HANDGRIPSTRENGTH.csv')
+    df.to_csv(DATA_PATH + '/PROACT_HANDGRIPSTRENGTH_v2.csv', index=False)
+
+
+
+    # Stage v3 - Impute missing trial numbers
+    df_handgrip = correct_test_trial(DATA_PATH + '/PROACT_HANDGRIPSTRENGTH_v2.csv')
+    df_handgrip.to_csv(DATA_PATH + '/PROACT_HANDGRIPSTRENGTH_v3.csv', index=False)
+
+
+
+    # Stage v4 - Pivot laterality and trial rows into one row per visit
+    df_handgrip = regroup_left_right_trials_handgrip(DATA_PATH + '/PROACT_HANDGRIPSTRENGTH_v3.csv')
+    df_handgrip.to_csv(DATA_PATH + '/PROACT_HANDGRIPSTRENGTH_v4.csv', index=False)
+
+
+
+    # Stage v5 - Add per-patient observation count
+    df_handgrip = observation_counter_handgrip(DATA_PATH + '/PROACT_HANDGRIPSTRENGTH_v4.csv')
+    df_handgrip.to_csv(DATA_PATH + '/PROACT_HANDGRIPSTRENGTH_v5.csv', index=False)
+
+
+
+    # Stage v6 - Add best-trial summary and laterality feature columns
+    df_handgrip = add_max_trials_columns_handgrip(DATA_PATH + '/PROACT_HANDGRIPSTRENGTH_v5.csv')
+    df_handgrip.to_csv(DATA_PATH + '/PROACT_HANDGRIPSTRENGTH_v6.csv', index=False)
+
+
+
+    # Stage v7 - Reshape to wide format
+    df_handgrip = reshape_to_wide_format(DATA_PATH + '/PROACT_HANDGRIPSTRENGTH_v6.csv')
+    df_handgrip.to_csv(DATA_PATH + '/PROACT_HANDGRIPSTRENGTH_v7.csv', index=False)
+
+
+
+    # Stage v8 - Add 'HAN_' prefix to all feature columns
+    df_renamed = rename_all_columns(DATA_PATH + '/PROACT_HANDGRIPSTRENGTH_v7.csv')
+    df_renamed.to_csv(DATA_PATH + '/PROACT_HANDGRIPSTRENGTH_v8.csv', index=False)

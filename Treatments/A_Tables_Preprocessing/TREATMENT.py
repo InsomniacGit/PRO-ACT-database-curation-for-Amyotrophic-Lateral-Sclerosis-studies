@@ -19,24 +19,7 @@ Data:   PROACT dataset (2022-07-29 release)
 
 
 import pandas as pd
-import os
-from pathlib import Path
 
-
-
-# ------------------------------------------------------------------
-# Path configuration
-# ------------------------------------------------------------------
-
-# Root directory for all processed outputs
-data_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "BDDfiltre2")
-
-# Root directory containing raw PROACT CSV exports
-proact_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "2022_07_29_PROACT_ALL_FORMS")
-
-# Create the output subdirectory if it does not already exist
-if not os.path.exists(data_path):
-    os.makedirs(data_path)
 
 
 
@@ -44,7 +27,6 @@ if not os.path.exists(data_path):
 # /////////////////////////////////////////////////////////////
 # ------------------------- TREATMENT -------------------------
 # /////////////////////////////////////////////////////////////
-
 
 
 
@@ -72,8 +54,31 @@ def rename_all_columns(file_path):
     """
     df = pd.read_csv(file_path, low_memory=False)
     df = df.rename(columns={col: f'TRE_{col}' for col in df.columns if col != 'subject_id'})
+
     return df
 
 
-df_renamed = rename_all_columns(proact_path + '/PROACT_TREATMENT.csv')
-df_renamed.to_csv(data_path + '/PROACT_TREATMENT_v2.csv', index=False)
+
+
+
+
+
+
+
+
+# ==================================================================
+# ------------------------- PIPELINE EXECUTION ---------------------
+# ==================================================================
+
+def run(DATA_PATH, PROACT_PATH):
+
+    print("\n" * 3)
+    print("=" * 60)
+    print("TREATMENT PIPELINE")
+    print("=" * 60)
+
+    
+
+    # Stage v2 - Add 'TRE_' prefix to all feature columns
+    df_renamed = rename_all_columns(PROACT_PATH + '/PROACT_TREATMENT.csv')
+    df_renamed.to_csv(DATA_PATH + '/PROACT_TREATMENT_v2.csv', index=False)

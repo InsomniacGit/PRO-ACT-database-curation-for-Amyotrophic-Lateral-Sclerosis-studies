@@ -21,24 +21,7 @@ Data:   PROACT dataset (2022-07-29 release)
 
 
 import pandas as pd
-import os
-from pathlib import Path
 
-
-
-# ------------------------------------------------------------------
-# Path configuration
-# ------------------------------------------------------------------
-
-# Root directory for all processed outputs
-data_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "BDDfiltre2")
-
-# Root directory containing raw PROACT CSV exports
-proact_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "2022_07_29_PROACT_ALL_FORMS")
-
-# Create the output subdirectory if it does not already exist
-if not os.path.exists(data_path):
-    os.makedirs(data_path)
 
 
 
@@ -46,7 +29,6 @@ if not os.path.exists(data_path):
 # ////////////////////////////////////////////////////////////
 # ------------------------- RILUZOLE -------------------------
 # ////////////////////////////////////////////////////////////
-
 
 
 
@@ -72,8 +54,6 @@ def check_unique_rows(file_path):
     num_errors = len(duplicated_subjects.unique())
     print(f"Patients with more than one row: {num_errors}")
 
-
-check_unique_rows(proact_path + '/PROACT_RILUZOLE.csv')
 
 
 
@@ -102,8 +82,36 @@ def rename_all_columns(file_path):
     """
     df = pd.read_csv(file_path, low_memory=False)
     df = df.rename(columns={col: f'RIL_{col}' for col in df.columns if col != 'subject_id'})
+
     return df
 
 
-df_renamed = rename_all_columns(proact_path + '/PROACT_RILUZOLE.csv')
-df_renamed.to_csv(data_path + '/PROACT_RILUZOLE_v2.csv', index=False)
+
+
+
+
+
+
+
+
+# ==================================================================
+# ------------------------- PIPELINE EXECUTION ---------------------
+# ==================================================================
+
+def run(DATA_PATH, PROACT_PATH):
+
+    print("\n" * 3)
+    print("=" * 60)
+    print("RILUZOLE PIPELINE")
+    print("=" * 60)
+
+    
+
+    # Diagnostic - Check for unexpected duplicate patients
+    check_unique_rows(PROACT_PATH + '/PROACT_RILUZOLE.csv')
+
+
+
+    # Stage v2 - Add 'RIL_' prefix to all feature columns
+    df_renamed = rename_all_columns(PROACT_PATH + '/PROACT_RILUZOLE.csv')
+    df_renamed.to_csv(DATA_PATH + '/PROACT_RILUZOLE_v2.csv', index=False)

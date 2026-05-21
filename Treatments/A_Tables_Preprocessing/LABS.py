@@ -36,27 +36,7 @@ Data:   PROACT dataset (2022-07-29 release)
 
 import pandas as pd
 import numpy as np
-import os
-from pathlib import Path
 
-
-
-# ------------------------------------------------------------------
-# Path configuration
-# ------------------------------------------------------------------
-
-# Root directory for all processed outputs
-data_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "BDDfiltre2")
-
-# Root directory containing raw PROACT CSV exports
-proact_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "2022_07_29_PROACT_ALL_FORMS")
-
-# Root directory containing external validation files (e.g. Desnuelles test list)
-validation_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "DATA")
-
-# Create the output subdirectory if it does not already exist
-if not os.path.exists(data_path):
-    os.makedirs(data_path)
 
 
 
@@ -64,7 +44,6 @@ if not os.path.exists(data_path):
 # ////////////////////////////////////////////////////////
 # ------------------------- LABS -------------------------
 # ////////////////////////////////////////////////////////
-
 
 
 
@@ -152,12 +131,6 @@ def list_unique_test_names(file_path, validation_path):
 
     return test_name_counts
 
-
-test_names = list_unique_test_names(
-    proact_path + '/PROACT_LABS.csv',
-    validation_path + '/PROACT_LABS_Validation_Desnuelles.csv'
-)
-test_names.to_csv(data_path + '/PROACT_LABS_Test_Names.csv', index=False)
 
 
 
@@ -279,9 +252,6 @@ def filter_labs(file_path):
     return df
 
 
-df = filter_labs(proact_path + '/PROACT_LABS.csv')
-df.to_csv(data_path + '/PROACT_LABS_v2.csv', index=False)
-
 
 
 
@@ -289,7 +259,7 @@ df.to_csv(data_path + '/PROACT_LABS_v2.csv', index=False)
 # Stage v3 - Retain only expert-validated tests
 # ------------------------------------------------------------------
 
-def filter_validated_tests(file_path):
+def filter_validated_tests(file_path, data_path):
     """
     Remove all tests that are not validated by at least one expert source.
 
@@ -302,6 +272,8 @@ def filter_validated_tests(file_path):
     ----------
     file_path : str
         Path to PROACT_LABS_v2.csv.
+    data_path : str   
+        Path to the Root directory for all processed outputs
 
     Returns
     -------
@@ -327,9 +299,6 @@ def filter_validated_tests(file_path):
 
     return df_filtered
 
-
-df_labs = filter_validated_tests(data_path + '/PROACT_LABS_v2.csv')
-df_labs.to_csv(data_path + '/PROACT_LABS_v3.csv', index=False)
 
 
 def list_valid_tests(file_path):
@@ -357,9 +326,6 @@ def list_valid_tests(file_path):
     ][['Test_Name', 'Unique_Subject_ID_Count', 'Percentage_of_Total_Subjects',
        'Valid_Desnuelles', 'Valid_Soriani']]
 
-
-df_valid_tests = list_valid_tests(data_path + '/PROACT_LABS_Test_Names.csv')
-df_valid_tests.to_csv(data_path + '/PROACT_LABS_Test_Names_Validated.csv', index=False)
 
 
 
@@ -411,9 +377,6 @@ def filter_by_percentage(file_path, threshold):
 
     return df_filtered
 
-
-df_labs = filter_by_percentage(data_path + '/PROACT_LABS_v3.csv', threshold=20.0)
-df_labs.to_csv(data_path + '/PROACT_LABS_v4.csv', index=False)
 
 
 
@@ -507,9 +470,6 @@ def reshape_to_semi_wide_format(csv_file):
     return df_wide
 
 
-df_labs = reshape_to_semi_wide_format(data_path + '/PROACT_LABS_v4.csv')
-df_labs.to_csv(data_path + '/PROACT_LABS_v5.csv', index=False)
-
 
 
 
@@ -546,8 +506,6 @@ def check_multiple_units(file_path):
                     patient_count = df[df[col] == unit]['subject_id'].nunique()
                     print(f"\t{unit}: {patient_count} patients")
 
-
-check_multiple_units(data_path + '/PROACT_LABS_v5.csv')
 
 
 
@@ -596,9 +554,6 @@ def remove_plural_units(file_path):
     return df
 
 
-df_labs = remove_plural_units(data_path + '/PROACT_LABS_v5.csv')
-df_labs.to_csv(data_path + '/PROACT_LABS_v6.csv', index=False)
-
 
 
 
@@ -642,7 +597,6 @@ def check_textual_results(file_path):
                 print(f"\t'{entry}': {count} patients")
             print()
 
-# check_textual_results(data_path + '/PROACT_LABS_v6.csv')
 
 
 
@@ -767,10 +721,6 @@ def remove_unusable_tests_units(file_path):
     return df
 
 
-df_labs = remove_unusable_tests_units(data_path + '/PROACT_LABS_v6.csv')
-df_labs.to_csv(data_path + '/PROACT_LABS_v7.csv', index=False)
-# check_textual_results(data_path + '/PROACT_LABS_v7.csv')
-
 
 # Audit: compute per-column filling rates after all cleaning steps
 def calculate_filling_rate(file_path):
@@ -815,9 +765,6 @@ def calculate_filling_rate(file_path):
     return filling_rate_df
 
 
-filling_rates = calculate_filling_rate(data_path + '/PROACT_LABS_v7.csv')
-filling_rates.to_csv(data_path + '/PROACT_LABS_Filling_Rates.csv', index=False)
-
 
 
 
@@ -854,9 +801,6 @@ def observation_counter_labs(file_path):
 
     return df
 
-
-df_labs = observation_counter_labs(data_path + '/PROACT_LABS_v7.csv')
-df_labs.to_csv(data_path + '/PROACT_LABS_v8.csv', index=False)
 
 
 
@@ -956,9 +900,6 @@ def reshape_to_fully_wide_format(csv_file):
     return df_grouped
 
 
-df_labs = reshape_to_fully_wide_format(data_path + '/PROACT_LABS_v8.csv')
-df_labs.to_csv(data_path + '/PROACT_LABS_v9.csv', index=False)
-
 
 
 
@@ -989,5 +930,104 @@ def rename_all_columns(file_path):
     return df
 
 
-df_renamed = rename_all_columns(data_path + '/PROACT_LABS_v9.csv')
-df_renamed.to_csv(data_path + '/PROACT_LABS_v10.csv', index=False)
+
+
+
+
+
+
+
+
+# ==================================================================
+# ------------------------- PIPELINE EXECUTION ---------------------
+# ==================================================================
+
+def run(DATA_PATH, PROACT_PATH, VALIDATION_PATH):
+
+    print("\n" * 3)
+    print("=" * 60)
+    print("LABS PIPELINE")
+    print("=" * 60)
+
+    
+
+    # Reference - List unique test names and cross-validate against expert lists
+    test_names = list_unique_test_names(
+        PROACT_PATH + '/PROACT_LABS.csv',
+        VALIDATION_PATH + '/PROACT_LABS_Validation_Desnuelles.csv'
+    )
+    test_names.to_csv(DATA_PATH + '/PROACT_LABS_Test_Names.csv', index=False)
+
+
+
+    # Stage v2 - Normalise test names, units, and result values
+    df = filter_labs(PROACT_PATH + '/PROACT_LABS.csv')
+    df.to_csv(DATA_PATH + '/PROACT_LABS_v2.csv', index=False)
+
+
+
+    # Stage v3 - Retain only expert-validated tests
+    df_labs = filter_validated_tests(DATA_PATH + '/PROACT_LABS_v2.csv', data_path=DATA_PATH)
+    df_labs.to_csv(DATA_PATH + '/PROACT_LABS_v3.csv', index=False)
+
+    df_valid_tests = list_valid_tests(DATA_PATH + '/PROACT_LABS_Test_Names.csv')
+    df_valid_tests.to_csv(DATA_PATH + '/PROACT_LABS_Test_Names_Validated.csv', index=False)
+
+
+
+    # Stage v4 - Filter tests below the prevalence threshold
+    df_labs = filter_by_percentage(DATA_PATH + '/PROACT_LABS_v3.csv', threshold=20.0)
+    df_labs.to_csv(DATA_PATH + '/PROACT_LABS_v4.csv', index=False)
+
+
+
+    # Stage v5 - Pivot to semi-wide format (one row per subject/visit)
+    df_labs = reshape_to_semi_wide_format(DATA_PATH + '/PROACT_LABS_v4.csv')
+    df_labs.to_csv(DATA_PATH + '/PROACT_LABS_v5.csv', index=False)
+
+
+
+    # Diagnostic - Check for residual multi-unit columns
+    check_multiple_units(DATA_PATH + '/PROACT_LABS_v5.csv')
+
+
+
+    # Stage v6 - Resolve residual multi-unit conflicts
+    df_labs = remove_plural_units(DATA_PATH + '/PROACT_LABS_v5.csv')
+    df_labs.to_csv(DATA_PATH + '/PROACT_LABS_v6.csv', index=False)
+
+
+
+    # Diagnostic - Identify non-numeric result values (run before stage v7)
+    # check_textual_results(DATA_PATH + '/PROACT_LABS_v6.csv')
+
+
+
+    # Stage v7 - Clean non-numeric and sentinel result values
+    df_labs = remove_unusable_tests_units(DATA_PATH + '/PROACT_LABS_v6.csv')
+    df_labs.to_csv(DATA_PATH + '/PROACT_LABS_v7.csv', index=False)
+    # check_textual_results(DATA_PATH + '/PROACT_LABS_v7.csv')
+
+
+
+    # Audit: compute per-column filling rates after all cleaning steps
+    filling_rates = calculate_filling_rate(DATA_PATH + '/PROACT_LABS_v7.csv')
+    filling_rates.to_csv(DATA_PATH + '/PROACT_LABS_Filling_Rates.csv', index=False)
+
+
+
+    # Stage v8 - Add per-patient observation count
+    df_labs = observation_counter_labs(DATA_PATH + '/PROACT_LABS_v7.csv')
+    df_labs.to_csv(DATA_PATH + '/PROACT_LABS_v8.csv', index=False)
+
+
+
+    # Stage v9 - Reshape to fully wide format
+    df_labs = reshape_to_fully_wide_format(DATA_PATH + '/PROACT_LABS_v8.csv')
+    df_labs.to_csv(DATA_PATH + '/PROACT_LABS_v9.csv', index=False)
+
+
+
+    # Stage v10 - Add 'LAB_' prefix to all feature columns
+    df_renamed = rename_all_columns(DATA_PATH + '/PROACT_LABS_v9.csv')
+    df_renamed.to_csv(DATA_PATH + '/PROACT_LABS_v10.csv', index=False)

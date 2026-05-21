@@ -41,38 +41,17 @@ Data:   PROACT dataset (2022-07-29 release)
 
 import pandas as pd
 import numpy as np
-import os
 import matplotlib.pyplot as plt
-from pathlib import Path
-
-
-
-# ------------------------------------------------------------------
-# Path configuration
-# ------------------------------------------------------------------
-
-# Root directory for all preprocessed per-table CSV files
-data_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "BDDfiltre")
-
-# Root directory for merged (multi-table) datasets
-merge_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "Merge")
-
-# Root directory for first-symptoms-aligned output datasets
-first_symptoms_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "First_Symptoms")
-
-# Create the output directory if it does not already exist
-if not os.path.exists(first_symptoms_path):
-    os.makedirs(first_symptoms_path)
 
 
 
 
-
+    
 # ------------------------------------------------------------------
 # Load the symptom onset reference values
 # ------------------------------------------------------------------
 
-def get_first_symptoms_delta():
+def get_first_symptoms_delta(data_path, first_symptoms_path):
     """
     Load HIS_Onset_Delta from the preprocessed ALS HISTORY table and return
     a patient-to-onset dictionary used for temporal re-alignment.
@@ -89,6 +68,11 @@ def get_first_symptoms_delta():
     Two audit artefacts are produced:
         HIS_Onset_Delta_Distribution.png  - histogram of onset delta values
         HIS_Onset_Delta_Distribution.csv  - frequency table of onset delta values
+
+    Parameters
+    ----------
+    data_path           : str   Path to the Root directory for all processed outputs
+    first_symptoms_path : str   Path to the Root directory for first-symptoms-aligned output datasets
 
     Returns
     -------
@@ -126,10 +110,6 @@ def get_first_symptoms_delta():
     )
 
     return delta_dict
-
-
-delta_dict = get_first_symptoms_delta()
-print(f"Patients with HIS_Onset_Delta: {len(delta_dict)}")
 
 
 
@@ -191,131 +171,113 @@ def align_first_symptoms_delta(file_path, output_csv, delta_dict):
 
 
 
-# //////////////////////////////////////////////////////////
-# ------------------------- ALSFRS -------------------------
-# //////////////////////////////////////////////////////////
+# ==================================================================
+# ------------------------- PIPELINE EXECUTION ---------------------
+# ==================================================================
 
-align_first_symptoms_delta(
-    file_path  = data_path + "/PROACT_ALSFRS_v8.csv",
-    output_csv = first_symptoms_path + "/PROACT_ALSFRS_FIRST_SYMPTOMS.csv",
-    delta_dict = delta_dict
-)
+def run(DATA_PATH, MERGE_PATH, FIRST_SYMPTOMS_PATH):
 
-
-
-
-
-# ///////////////////////////////////////////////////////
-# ------------------------- FVC -------------------------
-# ///////////////////////////////////////////////////////
-
-align_first_symptoms_delta(
-    file_path  = data_path + "/PROACT_FVC_v7.csv",
-    output_csv = first_symptoms_path + "/PROACT_FVC_FIRST_SYMPTOMS.csv",
-    delta_dict = delta_dict
-)
+    print("\n" * 3)
+    print("=" * 60)
+    print(" FIRST SYMPTOMS ALIGNMENT PIPELINE")
+    print("=" * 60)
 
 
 
-
-
-# ////////////////////////////////////////////////////////////////////
-# ------------------------- HANDGRIPSTRENGTH -------------------------
-# ////////////////////////////////////////////////////////////////////
-
-align_first_symptoms_delta(
-    file_path  = data_path + "/PROACT_HANDGRIPSTRENGTH_v8.csv",
-    output_csv = first_symptoms_path + "/PROACT_HANDGRIPSTRENGTH_FIRST_SYMPTOMS.csv",
-    delta_dict = delta_dict
-)
+    # Load the symptom onset reference values
+    delta_dict = get_first_symptoms_delta(data_path=DATA_PATH, first_symptoms_path=FIRST_SYMPTOMS_PATH)
+    print(f"Patients with HIS_Onset_Delta: {len(delta_dict)}")
 
 
 
-
-
-# ////////////////////////////////////////////////////////
-# ------------------------- LABS -------------------------
-# ////////////////////////////////////////////////////////
-
-align_first_symptoms_delta(
-    file_path  = data_path + "/PROACT_LABS_v10.csv",
-    output_csv = first_symptoms_path + "/PROACT_LABS_FIRST_SYMPTOMS.csv",
-    delta_dict = delta_dict
-)
+    # ALSFRS
+    align_first_symptoms_delta(
+        file_path  = DATA_PATH + "/PROACT_ALSFRS_v8.csv",
+        output_csv = FIRST_SYMPTOMS_PATH + "/PROACT_ALSFRS_FIRST_SYMPTOMS.csv",
+        delta_dict = delta_dict
+    )
 
 
 
-
-
-# //////////////////////////////////////////////////////////////////
-# ------------------------- MUSCLESTRENGTH -------------------------
-# //////////////////////////////////////////////////////////////////
-
-align_first_symptoms_delta(
-    file_path  = data_path + "/PROACT_MUSCLESTRENGTH_v8.csv",
-    output_csv = first_symptoms_path + "/PROACT_MUSCLESTRENGTH_FIRST_SYMPTOMS.csv",
-    delta_dict = delta_dict
-)
+    # FVC
+    align_first_symptoms_delta(
+        file_path  = DATA_PATH + "/PROACT_FVC_v7.csv",
+        output_csv = FIRST_SYMPTOMS_PATH + "/PROACT_FVC_FIRST_SYMPTOMS.csv",
+        delta_dict = delta_dict
+    )
 
 
 
-
-
-# ///////////////////////////////////////////////////////
-# ------------------------- SVC -------------------------
-# ///////////////////////////////////////////////////////
-
-align_first_symptoms_delta(
-    file_path  = data_path + "/PROACT_SVC_v7.csv",
-    output_csv = first_symptoms_path + "/PROACT_SVC_FIRST_SYMPTOMS.csv",
-    delta_dict = delta_dict
-)
+    # HANDGRIPSTRENGTH
+    align_first_symptoms_delta(
+        file_path  = DATA_PATH + "/PROACT_HANDGRIPSTRENGTH_v8.csv",
+        output_csv = FIRST_SYMPTOMS_PATH + "/PROACT_HANDGRIPSTRENGTH_FIRST_SYMPTOMS.csv",
+        delta_dict = delta_dict
+    )
 
 
 
-
-
-# //////////////////////////////////////////////////////////////
-# ------------------------- VITALSIGNS -------------------------
-# //////////////////////////////////////////////////////////////
-
-align_first_symptoms_delta(
-    file_path  = data_path + "/PROACT_VITALSIGNS_v7.csv",
-    output_csv = first_symptoms_path + "/PROACT_VITALSIGNS_FIRST_SYMPTOMS.csv",
-    delta_dict = delta_dict
-)
+    # LABS
+    align_first_symptoms_delta(
+        file_path  = DATA_PATH + "/PROACT_LABS_v10.csv",
+        output_csv = FIRST_SYMPTOMS_PATH + "/PROACT_LABS_FIRST_SYMPTOMS.csv",
+        delta_dict = delta_dict
+    )
 
 
 
-
-
-# /////////////////////////////////////////////////////////////////
-# ------------------------- MERGE NODELTA -------------------------
-# /////////////////////////////////////////////////////////////////
-
-# The non-temporal union table contains no Delta columns to shift.
-# This call only drops patients without a recorded symptom onset date,
-# ensuring cohort consistency with the aligned temporal tables.
-align_first_symptoms_delta(
-    file_path  = merge_path + "/PROACT_MERGE_NODELTA_V2.csv",
-    output_csv = first_symptoms_path + "/PROACT_MERGE_NODELTA_FIRST_SYMPTOMS.csv",
-    delta_dict = delta_dict
-)
+    # MUSCLESTRENGTH
+    align_first_symptoms_delta(
+        file_path  = DATA_PATH + "/PROACT_MUSCLESTRENGTH_v8.csv",
+        output_csv = FIRST_SYMPTOMS_PATH + "/PROACT_MUSCLESTRENGTH_FIRST_SYMPTOMS.csv",
+        delta_dict = delta_dict
+    )
 
 
 
+    # SVC
+    align_first_symptoms_delta(
+        file_path  = DATA_PATH + "/PROACT_SVC_v7.csv",
+        output_csv = FIRST_SYMPTOMS_PATH + "/PROACT_SVC_FIRST_SYMPTOMS.csv",
+        delta_dict = delta_dict
+    )
 
 
-# ------------------------------------------------------------------
-# Tables skipped - no Delta columns to shift
-# ------------------------------------------------------------------
 
-# ADVERSE EVENTS   - Delta columns were dropped during preprocessing (v1->v2)
-# CONMEDS          - Delta columns were dropped during preprocessing (v3->v4)
-# ALSHISTORY       - non-temporal dataset, no Delta column after preprocessing
-# DEATHDATA        - non-temporal dataset, no Delta column after preprocessing
-# DEMOGRAPHICS     - non-temporal dataset, no Delta column after preprocessing
-# EL ESCORIAL      - non-temporal dataset, no Delta column after preprocessing
-# FAMILY HISTORY   - non-temporal dataset, no Delta column after preprocessing
-# RILUZOLE         - non-temporal dataset, no Delta column after preprocessing
-# TREATMENT        - non-temporal dataset, no Delta column after preprocessing
+    # VITALSIGNS
+    align_first_symptoms_delta(
+        file_path  = DATA_PATH + "/PROACT_VITALSIGNS_v7.csv",
+        output_csv = FIRST_SYMPTOMS_PATH + "/PROACT_VITALSIGNS_FIRST_SYMPTOMS.csv",
+        delta_dict = delta_dict
+    )
+
+
+
+    # ------------------------------------------------------------------
+    # MERGE_NODELTA
+    # ------------------------------------------------------------------
+
+    # The non-temporal union table contains no Delta columns to shift.
+    # This call only drops patients without a recorded symptom onset date,
+    # ensuring cohort consistency with the aligned temporal tables.
+    align_first_symptoms_delta(
+        file_path  = MERGE_PATH + "/PROACT_MERGE_NODELTA_V2.csv",
+        output_csv = FIRST_SYMPTOMS_PATH + "/PROACT_MERGE_NODELTA_FIRST_SYMPTOMS.csv",
+        delta_dict = delta_dict
+    )
+
+
+
+    # ------------------------------------------------------------------
+    # Tables skipped - no Delta columns to shift
+    # ------------------------------------------------------------------
+
+    # ADVERSE EVENTS   - Delta columns were dropped during preprocessing (v1->v2)
+    # CONMEDS          - Delta columns were dropped during preprocessing (v3->v4)
+    # ALSHISTORY       - non-temporal dataset, no Delta column after preprocessing
+    # DEATHDATA        - non-temporal dataset, no Delta column after preprocessing
+    # DEMOGRAPHICS     - non-temporal dataset, no Delta column after preprocessing
+    # EL ESCORIAL      - non-temporal dataset, no Delta column after preprocessing
+    # FAMILY HISTORY   - non-temporal dataset, no Delta column after preprocessing
+    # RILUZOLE         - non-temporal dataset, no Delta column after preprocessing
+    # TREATMENT        - non-temporal dataset, no Delta column after preprocessing

@@ -1,27 +1,28 @@
 """
-PROACT Forced Vital Capacity (FVC) Processing Pipeline
-=======================================================
-This script processes the PROACT (PRO-ACT ALS) forced vital capacity dataset
+PROACT Slow Vital Capacity (SVC) Processing Pipeline
+=====================================================
+This script processes the PROACT (PRO-ACT ALS) slow vital capacity dataset
 through a sequential cleaning, imputation, and reshaping pipeline. It produces
 seven intermediate CSV files, culminating in a wide-format one-row-per-patient
 matrix with visits stored as sequentially prefixed columns.
 
-FVC is measured across up to three trials per visit. For each trial, three
+SVC is measured across up to three trials per visit. For each trial, three
 quantities are recorded and linked by the identity:
 
     pct_of_Normal = (Subject_Liters / subject_normal) * 100
 
 When two of the three quantities are present, the third can be derived
-algebraically. This imputation strategy is applied in stage v3.
+algebraically. This imputation strategy mirrors the one applied in the
+FVC pipeline (PROACT_FVC_processing.py).
 
 Pipeline stages:
-    v2  - Drop the redundant Forced_Vital_Capacity_Units column
+    v2  - Drop the redundant units column; fix inconsistent raw column names
     v3  - Impute missing trial values using the three-quantity identity
     v4  - Add per-patient observation count
     v5  - Add best-trial columns (maximum Subject_Liters across the three trials
           and its corresponding pct_of_Normal)
     v6  - Reshape to wide format (one row per patient, visits as prefixed columns)
-    v7  - Prefix all feature columns with 'FVC_' for downstream merging
+    v7  - Prefix all feature columns with 'SVC_' for downstream merging
 
 Author: Bouclier Lucas
 Data:   PROACT dataset (2022-07-29 release)
@@ -30,75 +31,73 @@ Data:   PROACT dataset (2022-07-29 release)
 
 
 import pandas as pd
-import os
-from pathlib import Path
-
-
-
-# ------------------------------------------------------------------
-# Path configuration
-# ------------------------------------------------------------------
-
-# Root directory for all processed outputs
-data_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "BDDfiltre2")
-
-# Root directory containing raw PROACT CSV exports
-proact_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "2022_07_29_PROACT_ALL_FORMS")
-
-# Create the output subdirectory if it does not already exist
-if not os.path.exists(data_path):
-    os.makedirs(data_path)
 
 
 
 
 
 # ///////////////////////////////////////////////////////
-# ------------------------- FVC -------------------------
+# ------------------------- SVC -------------------------
 # ///////////////////////////////////////////////////////
 
 
 
 # ------------------------------------------------------------------
-# Stage v2 - Drop the redundant units column
+# Stage v2 - Drop redundant column and fix raw column names
 # ------------------------------------------------------------------
 
-def modify_proact_fvc(file_path):
+def modify_proact_svc(file_path):
     """
-    Remove the Forced_Vital_Capacity_Units column from the FVC dataset.
+    Remove the constant units column and standardise inconsistent column names
+    inherited from the raw PROACT export.
 
-    This column contains the measurement unit (Liters) which is constant
-    across the entire dataset and is therefore uninformative.
+    Dropped column:
+        Slow_Vital_Capacity_Units  - measurement unit is constant (Liters)
+
+    Column renames applied:
+        Subject_Liters__Trial_2_   -> Subject_Liters_Trial_2  (spurious underscores)
+        Subject_Liters__Trial_3_   -> Subject_Liters_Trial_3  (spurious underscores)
+        Subject_Normal             -> subject_normal           (case consistency with FVC)
+        Slow_vital_Capacity_Delta  -> Slow_Vital_Capacity_Delta (capitalisation fix)
+
+    These renames align the SVC column naming convention with that of the FVC
+    pipeline so that downstream code can treat both datasets uniformly.
 
     Parameters
     ----------
     file_path : str
-        Path to the raw PROACT_FVC.csv file.
+        Path to the raw PROACT_SVC.csv file.
 
     Returns
     -------
     pd.DataFrame
-        Cleaned DataFrame (-> saved as PROACT_FVC_v2.csv).
+        Cleaned DataFrame with standardised column names
+        (-> saved as PROACT_SVC_v2.csv).
     """
     df = pd.read_csv(file_path, low_memory=False)
-    df.drop(columns=['Forced_Vital_Capacity_Units'], inplace=True)
+
+    df.drop(columns=['Slow_Vital_Capacity_Units'], inplace=True)
+
+    df.rename(columns={
+        'Subject_Liters__Trial_2_':  'Subject_Liters_Trial_2',
+        'Subject_Liters__Trial_3_':  'Subject_Liters_Trial_3',
+        'Subject_Normal':            'subject_normal',
+        'Slow_vital_Capacity_Delta': 'Slow_Vital_Capacity_Delta',
+    }, inplace=True)
+
     return df
 
 
-df = modify_proact_fvc(proact_path + '/PROACT_FVC.csv')
-df.to_csv(data_path + '/PROACT_FVC_v2.csv', index=False)
-
-
 
 
 
 # ------------------------------------------------------------------
-# Stage v3 - Impute missing trial values from the FVC identity
+# Stage v3 - Impute missing trial values from the SVC identity
 # ------------------------------------------------------------------
 
-def missing_data_calculation_fvc(file_path):
+def compute_missing_data_svc(file_path):
     """
-    Impute missing FVC trial values using the three-quantity algebraic identity:
+    Impute missing SVC trial values using the three-quantity algebraic identity:
 
         pct_of_Normal = (Subject_Liters / subject_normal) * 100
 
@@ -107,7 +106,8 @@ def missing_data_calculation_fvc(file_path):
         Subject_Liters = subject_normal * (pct_of_Normal / 100)
         subject_normal = Subject_Liters / (pct_of_Normal / 100)
 
-    Imputation is applied in three sequential passes:
+    Imputation is applied in three sequential passes (identical logic to the
+    FVC pipeline in PROACT_FVC_processing.py):
 
     1. subject_normal: computed from each available (Subject_Liters, pct_of_Normal)
        trial pair and averaged across trials. Only imputed when the raw value
@@ -125,13 +125,13 @@ def missing_data_calculation_fvc(file_path):
     Parameters
     ----------
     file_path : str
-        Path to PROACT_FVC_v2.csv.
+        Path to PROACT_SVC_v2.csv.
 
     Returns
     -------
     pd.DataFrame
         DataFrame with trial columns imputed where algebraically possible
-        (-> saved as PROACT_FVC_v3.csv).
+        (-> saved as PROACT_SVC_v3.csv).
     """
     df = pd.read_csv(file_path, low_memory=False)
 
@@ -202,10 +202,6 @@ def missing_data_calculation_fvc(file_path):
     return df
 
 
-df_fvc = missing_data_calculation_fvc(data_path + '/PROACT_FVC_v2.csv')
-df_fvc.to_csv(data_path + '/PROACT_FVC_v3.csv', index=False)
-
-
 
 
 
@@ -213,9 +209,9 @@ df_fvc.to_csv(data_path + '/PROACT_FVC_v3.csv', index=False)
 # Stage v4 - Add per-patient observation count
 # ------------------------------------------------------------------
 
-def observation_counter_fvc(file_path):
+def observation_counter_svc(file_path):
     """
-    Add an `observation_count` column recording how many FVC visit rows exist
+    Add an `observation_count` column recording how many SVC visit rows exist
     per patient.
 
     Each row represents one spirometry assessment visit. This count reflects
@@ -224,7 +220,7 @@ def observation_counter_fvc(file_path):
     Parameters
     ----------
     file_path : str
-        Path to PROACT_FVC_v3.csv.
+        Path to PROACT_SVC_v3.csv.
 
     Returns
     -------
@@ -243,10 +239,6 @@ def observation_counter_fvc(file_path):
     df = df[cols]
 
     return df
-
-
-df_fvc = observation_counter_fvc(data_path + '/PROACT_FVC_v3.csv')
-df_fvc.to_csv(data_path + '/PROACT_FVC_v4.csv', index=False)
 
 
 
@@ -273,20 +265,20 @@ def add_max_trials_columns(file_path):
     Parameters
     ----------
     file_path : str
-        Path to PROACT_FVC_v4.csv.
+        Path to PROACT_SVC_v4.csv.
 
     Returns
     -------
     pd.DataFrame
         Input DataFrame with two additional summary columns
-        (-> saved as PROACT_FVC_v5.csv).
+        (-> saved as PROACT_SVC_v5.csv).
     """
     df = pd.read_csv(file_path, low_memory=False)
 
     df['Subject_Liters_Trials_Max'] = df[[
         'Subject_Liters_Trial_1',
         'Subject_Liters_Trial_2',
-        'Subject_Liters_Trial_3'
+        'Subject_Liters_Trial_3',
     ]].max(axis=1)
 
     def get_pct_of_normal_max(row):
@@ -304,10 +296,6 @@ def add_max_trials_columns(file_path):
     return df
 
 
-df_fvc = add_max_trials_columns(data_path + '/PROACT_FVC_v4.csv')
-df_fvc.to_csv(data_path + '/PROACT_FVC_v5.csv', index=False)
-
-
 
 
 
@@ -317,37 +305,37 @@ df_fvc.to_csv(data_path + '/PROACT_FVC_v5.csv', index=False)
 
 def reshape_to_wide_format(csv_file):
     """
-    Reshape the long-format FVC data (multiple rows per patient) into a
+    Reshape the long-format SVC data (multiple rows per patient) into a
     wide-format DataFrame (one row per patient) where each visit's values
     are stored in sequentially prefixed columns.
 
-    Visits are sorted by Forced_Vital_Capacity_Delta (time since study
-    baseline) before pivoting, so that column prefix 1_ always corresponds
-    to the earliest recorded visit.
+    Visits are sorted by Slow_Vital_Capacity_Delta (time since study baseline)
+    before pivoting, so that column prefix 1_ always corresponds to the
+    earliest recorded visit.
 
     Only the ten clinically relevant columns are retained in the wide format;
     administrative columns are excluded.
 
     Column naming convention:
         {visit_index}_{original_column_name}
-        e.g. "1_Forced_Vital_Capacity_Delta", "2_Subject_Liters_Trials_Max"
+        e.g. "1_Slow_Vital_Capacity_Delta", "2_Subject_Liters_Trials_Max"
 
     Parameters
     ----------
     csv_file : str
-        Path to PROACT_FVC_v5.csv.
+        Path to PROACT_SVC_v5.csv.
 
     Returns
     -------
     pd.DataFrame
         Wide-format patient-level DataFrame
-        (-> saved as PROACT_FVC_v6.csv).
+        (-> saved as PROACT_SVC_v6.csv).
     """
     df = pd.read_csv(csv_file, low_memory=False)
 
     # Columns to carry into the wide format (one set per visit)
     colonnes = [
-        'Forced_Vital_Capacity_Delta',
+        'Slow_Vital_Capacity_Delta',
         'Subject_Liters_Trial_1',
         'pct_of_Normal_Trial_1',
         'Subject_Liters_Trial_2',
@@ -360,14 +348,14 @@ def reshape_to_wide_format(csv_file):
     ]
 
     # Sort visits chronologically within each patient
-    df = df.sort_values(by=['subject_id', 'Forced_Vital_Capacity_Delta'])
+    df = df.sort_values(by=['subject_id', 'Slow_Vital_Capacity_Delta'])
 
     rows = []
 
     for subject_id, group in df.groupby('subject_id'):
         group = group.reset_index(drop=True)
         row_data = {
-            'subject_id': subject_id,
+            'subject_id':        subject_id,
             'observation_count': group.shape[0],
         }
 
@@ -382,20 +370,16 @@ def reshape_to_wide_format(csv_file):
     return df_final
 
 
-df_fvc = reshape_to_wide_format(data_path + '/PROACT_FVC_v5.csv')
-df_fvc.to_csv(data_path + '/PROACT_FVC_v6.csv', index=False)
-
-
 
 
 
 # ------------------------------------------------------------------
-# Stage v7 - Add 'FVC_' prefix to all feature columns
+# Stage v7 - Add 'SVC_' prefix to all feature columns
 # ------------------------------------------------------------------
 
 def rename_all_columns(file_path):
     """
-    Prefix every feature column with 'FVC_' to namespace the forced vital
+    Prefix every feature column with 'SVC_' to namespace the slow vital
     capacity variables when merging with other PROACT sub-datasets.
 
     `subject_id` is the join key and is left unchanged.
@@ -403,18 +387,71 @@ def rename_all_columns(file_path):
     Parameters
     ----------
     file_path : str
-        Path to PROACT_FVC_v6.csv.
+        Path to PROACT_SVC_v6.csv.
 
     Returns
     -------
     pd.DataFrame
         DataFrame with renamed columns
-        (-> saved as PROACT_FVC_v7.csv).
+        (-> saved as PROACT_SVC_v7.csv).
     """
     df = pd.read_csv(file_path, low_memory=False)
-    df = df.rename(columns={col: f'FVC_{col}' for col in df.columns if col != 'subject_id'})
+    df = df.rename(columns={col: f'SVC_{col}' for col in df.columns if col != 'subject_id'})
+
     return df
 
 
-df_renamed = rename_all_columns(data_path + '/PROACT_FVC_v6.csv')
-df_renamed.to_csv(data_path + '/PROACT_FVC_v7.csv', index=False)
+
+
+
+
+
+
+
+
+# ==================================================================
+# ------------------------- PIPELINE EXECUTION ---------------------
+# ==================================================================
+
+def run(DATA_PATH, PROACT_PATH):
+
+    print("\n" * 3)
+    print("=" * 60)
+    print("SVC PIPELINE")
+    print("=" * 60)
+
+    
+
+    # Stage v2 - Drop redundant column and fix raw column names
+    df = modify_proact_svc(PROACT_PATH + '/PROACT_SVC.csv')
+    df.to_csv(DATA_PATH + '/PROACT_SVC_v2.csv', index=False)
+
+
+
+    # Stage v3 - Impute missing trial values from the SVC identity
+    df_fvc = compute_missing_data_svc(DATA_PATH + '/PROACT_SVC_v2.csv')
+    df_fvc.to_csv(DATA_PATH + '/PROACT_SVC_v3.csv', index=False)
+
+
+
+    # Stage v4 - Add per-patient observation count
+    df_fvc = observation_counter_svc(DATA_PATH + '/PROACT_SVC_v3.csv')
+    df_fvc.to_csv(DATA_PATH + '/PROACT_SVC_v4.csv', index=False)
+
+
+
+    # Stage v5 - Add best-trial summary columns
+    df_fvc = add_max_trials_columns(DATA_PATH + '/PROACT_SVC_v4.csv')
+    df_fvc.to_csv(DATA_PATH + '/PROACT_SVC_v5.csv', index=False)
+
+
+
+    # Stage v6 - Reshape to wide format
+    df_fvc = reshape_to_wide_format(DATA_PATH + '/PROACT_SVC_v5.csv')
+    df_fvc.to_csv(DATA_PATH + '/PROACT_SVC_v6.csv', index=False)
+
+
+
+    # Stage v7 - Add 'SVC_' prefix to all feature columns
+    df_renamed = rename_all_columns(DATA_PATH + '/PROACT_SVC_v6.csv')
+    df_renamed.to_csv(DATA_PATH + '/PROACT_SVC_v7.csv', index=False)

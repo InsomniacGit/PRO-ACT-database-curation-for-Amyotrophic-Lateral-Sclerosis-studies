@@ -21,24 +21,6 @@ Data:   PROACT dataset (2022-07-29 release)
 
 
 import pandas as pd
-import os
-from pathlib import Path
-
-
-
-# ------------------------------------------------------------------
-# Path configuration
-# ------------------------------------------------------------------
-
-# Root directory for all processed outputs
-data_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "BDDfiltre2")
-
-# Root directory containing raw PROACT CSV exports
-proact_path = str(Path.home() / "Desktop" / "DATA_PROACT_V2" / "2022_07_29_PROACT_ALL_FORMS")
-
-# Create the output subdirectory if it does not already exist
-if not os.path.exists(data_path):
-    os.makedirs(data_path)
 
 
 
@@ -89,10 +71,6 @@ def split_medication_coded(file_path):
     df = df.reset_index(drop=True)
 
     return df
-
-
-df_duplicated = split_medication_coded(proact_path + '/PROACT_CONMEDS.csv')
-df_duplicated.to_csv(data_path + '/PROACT_CONMEDS_v2.csv', index=False)
 
 
 
@@ -152,10 +130,6 @@ def summarize_conmeds_prevalence(file_path):
     return df_conmeds
 
 
-df_boolean_conmeds = summarize_conmeds_prevalence(data_path + '/PROACT_CONMEDS_v2.csv')
-df_boolean_conmeds.to_csv(data_path + '/PROACT_CONMEDS_list.csv', index=False)
-
-
 
 
 
@@ -163,7 +137,7 @@ df_boolean_conmeds.to_csv(data_path + '/PROACT_CONMEDS_list.csv', index=False)
 # Stage v3 - Filter rare medications by prevalence threshold
 # ------------------------------------------------------------------
 
-def filter_conmeds_by_percentage(file_path, threshold):
+def filter_conmeds_by_percentage(file_path, threshold, data_path):
     """
     Retain only rows corresponding to medications reported by at least
     `threshold` percent of the total patient cohort.
@@ -176,6 +150,7 @@ def filter_conmeds_by_percentage(file_path, threshold):
     ----------
     file_path : str   Path to PROACT_CONMEDS_v2.csv.
     threshold : float Minimum patient prevalence (%) required to keep a medication.
+    data_path : str   Path to the Root directory for all processed outputs
 
     Returns
     -------
@@ -200,12 +175,6 @@ def filter_conmeds_by_percentage(file_path, threshold):
     df_filtered = df[df['Medication_Coded'].isin(conmeds_to_keep)]
 
     return df_filtered
-
-
-df_filtered_conmeds = filter_conmeds_by_percentage(
-    data_path + '/PROACT_CONMEDS_v2.csv', threshold=5
-)
-df_filtered_conmeds.to_csv(data_path + '/PROACT_CONMEDS_v3.csv', index=False)
 
 
 
@@ -254,10 +223,6 @@ def clean_conmeds_data(file_path):
     return df
 
 
-df_cleaned_conmeds = clean_conmeds_data(data_path + '/PROACT_CONMEDS_v3.csv')
-df_cleaned_conmeds.to_csv(data_path + '/PROACT_CONMEDS_v4.csv', index=False)
-
-
 
 
 
@@ -292,10 +257,6 @@ def observation_counter_conmeds(file_path):
     df = df[cols]
 
     return df
-
-
-df_counter = observation_counter_conmeds(data_path + '/PROACT_CONMEDS_v4.csv')
-df_counter.to_csv(data_path + '/PROACT_CONMEDS_v5.csv', index=False)
 
 
 
@@ -374,10 +335,6 @@ def pivot_conmeds_to_boolean_matrix(file_path):
     return df_final
 
 
-df_transformed = pivot_conmeds_to_boolean_matrix(data_path + '/PROACT_CONMEDS_v5.csv')
-df_transformed.to_csv(data_path + '/PROACT_CONMEDS_v6.csv', index=False)
-
-
 
 
 
@@ -408,5 +365,65 @@ def rename_all_columns(file_path):
     return df
 
 
-df_renamed = rename_all_columns(data_path + '/PROACT_CONMEDS_v6.csv')
-df_renamed.to_csv(data_path + '/PROACT_CONMEDS_v7.csv', index=False)
+
+
+
+
+
+
+
+
+# ==================================================================
+# ------------------------- PIPELINE EXECUTION ---------------------
+# ==================================================================
+
+def run(DATA_PATH, PROACT_PATH):
+
+    print("\n" * 3)
+    print("=" * 60)
+    print("CONMEDS PIPELINE")
+    print("=" * 60)
+
+    
+
+    # Stage v2 - Split multi-valued Medication_Coded entries
+    df_duplicated = split_medication_coded(PROACT_PATH + '/PROACT_CONMEDS.csv')
+    df_duplicated.to_csv(DATA_PATH + '/PROACT_CONMEDS_v2.csv', index=False)
+
+
+
+    # Prevalence reference - Count patients per medication
+    df_boolean_conmeds = summarize_conmeds_prevalence(DATA_PATH + '/PROACT_CONMEDS_v2.csv')
+    df_boolean_conmeds.to_csv(DATA_PATH + '/PROACT_CONMEDS_list.csv', index=False)
+
+
+
+    # Stage v3 - Filter rare medications by prevalence threshold
+    df_filtered_conmeds = filter_conmeds_by_percentage(
+        DATA_PATH + '/PROACT_CONMEDS_v2.csv', threshold=5, data_path=DATA_PATH
+    )
+    df_filtered_conmeds.to_csv(DATA_PATH + '/PROACT_CONMEDS_v3.csv', index=False)
+
+
+
+    # Stage v4 - Drop dosing columns and deduplicate
+    df_cleaned_conmeds = clean_conmeds_data(DATA_PATH + '/PROACT_CONMEDS_v3.csv')
+    df_cleaned_conmeds.to_csv(DATA_PATH + '/PROACT_CONMEDS_v4.csv', index=False)
+
+
+
+    # Stage v5 - Add per-patient observation count
+    df_counter = observation_counter_conmeds(DATA_PATH + '/PROACT_CONMEDS_v4.csv')
+    df_counter.to_csv(DATA_PATH + '/PROACT_CONMEDS_v5.csv', index=False)
+
+
+
+    # Stage v6 - Encode medications as binary indicator columns
+    df_transformed = pivot_conmeds_to_boolean_matrix(DATA_PATH + '/PROACT_CONMEDS_v5.csv')
+    df_transformed.to_csv(DATA_PATH + '/PROACT_CONMEDS_v6.csv', index=False)
+
+
+
+    # Stage v7 - Add 'CON_' prefix to all feature columns
+    df_renamed = rename_all_columns(DATA_PATH + '/PROACT_CONMEDS_v6.csv')
+    df_renamed.to_csv(DATA_PATH + '/PROACT_CONMEDS_v7.csv', index=False)
