@@ -7,13 +7,13 @@ It produces ten intermediate CSV files, culminating in a wide-format
 one-row-per-patient matrix with visits stored as sequentially prefixed columns.
 
 The lab dataset contains results from a large number of distinct tests. Two
-independent expert validation lists (Desnuelles and Soriani) are used to
-restrict the analysis to clinically relevant tests. Tests are further filtered
-by a minimum patient prevalence threshold before reshaping.
+independent expert validation lists (Dr. n°1 and Dr. n°2) are used to restrict 
+the analysis to clinically relevant tests. Tests are further filtered by a 
+minimum patient prevalence threshold before reshaping.
 
 Pipeline stages:
     Reference   - List all unique test names and cross-reference against two
-                  expert validation lists (Desnuelles, Soriani)
+                  expert validation lists (Dr. n°1, Dr. n°2)
     v2          - Normalise Test_Name casing; harmonise units; clean numeric
                   Test_Result values; standardise Urine Color labels
     v3          - Retain only tests validated by at least one expert list
@@ -57,9 +57,9 @@ def list_unique_test_names(file_path, validation_path):
     independent expert validation flags and patient prevalence statistics.
 
     The two validation sources are:
-        Valid_Desnuelles - tests selected by Desnuelles et al., loaded from
+        Valid_Dr1 - tests selected by Dr. n°1, loaded from
                            an external CSV (column index 4 of that file)
-        Valid_Soriani    - tests selected by Soriani et al., hardcoded from
+        Valid_Dr2 - tests selected by Dr. n°2, hardcoded from
                            the published list
 
     The resulting table is used by filter_validated_tests() to decide which
@@ -69,15 +69,15 @@ def list_unique_test_names(file_path, validation_path):
     Parameters
     ----------
     file_path       : str  Path to the raw PROACT_LABS.csv file.
-    validation_path : str  Path to PROACT_LABS_Validation_Desnuelles.csv
+    validation_path : str  Path to PROACT_LABS_Validation_Dr1.csv
                            (semicolon-separated).
 
     Returns
     -------
     pd.DataFrame
         Summary table with columns [Test_Name, Unique_Subject_ID_Count,
-        Percentage_of_Total_Subjects, Valid_Desnuelles, Valid_Soriani],
-        sorted by Unique_Subject_ID_Count descending
+        Percentage_of_Total_Subjects, Valid_Dr1, Valid_Dr2], sorted by 
+        Unique_Subject_ID_Count descending
         (-> saved as PROACT_LABS_Test_Names.csv).
     """
     df            = pd.read_csv(file_path,       low_memory=False)
@@ -96,25 +96,25 @@ def list_unique_test_names(file_path, validation_path):
         .rename(columns={'subject_id': 'Unique_Subject_ID_Count'})
     )
 
-    # Merge the Desnuelles validation flag (column index 4 of the validation file)
+    # Merge the Dr. n°1 validation flag (column index 4 of the validation file)
     test_name_counts = test_name_counts.merge(
         df_validation[['Test_Name', df_validation.columns[4]]],
         on='Test_Name', how='left'
     )
-    test_name_counts.rename(columns={df_validation.columns[4]: 'Valid_Desnuelles'}, inplace=True)
+    test_name_counts.rename(columns={df_validation.columns[4]: 'Valid_Dr1'}, inplace=True)
     # Convert 'x' markers to True and missing values to False
-    test_name_counts['Valid_Desnuelles'] = test_name_counts['Valid_Desnuelles'].apply(
+    test_name_counts['Valid_Dr1'] = test_name_counts['Valid_Dr1'].apply(
         lambda x: True if x == 'x' else False
     )
 
-    # Encode the Soriani validation flag from the published test list
-    soriani_tests = [
+    # Encode the Dr. n°2 validation flag from the published test list
+    dr2_tests = [
         'Creatine Kinase', 'Lymphocytes', 'Neutrophils',
         'Absolute Lymphocyte Count', 'Absolute Neutrophil Count',
         'Monocytes', 'Absolute Monocyte Count', 'Urine Ketones',
     ]
-    test_name_counts['Valid_Soriani'] = test_name_counts['Test_Name'].apply(
-        lambda x: True if x in soriani_tests else False
+    test_name_counts['Valid_Dr2'] = test_name_counts['Test_Name'].apply(
+        lambda x: True if x in dr2_tests else False
     )
 
     test_name_counts['Percentage_of_Total_Subjects'] = (
@@ -123,7 +123,7 @@ def list_unique_test_names(file_path, validation_path):
 
     test_name_counts = test_name_counts[[
         'Test_Name', 'Unique_Subject_ID_Count',
-        'Percentage_of_Total_Subjects', 'Valid_Desnuelles', 'Valid_Soriani',
+        'Percentage_of_Total_Subjects', 'Valid_Dr1', 'Valid_Dr2',
     ]]
     test_name_counts = test_name_counts.sort_values(
         by='Unique_Subject_ID_Count', ascending=False
@@ -263,10 +263,9 @@ def filter_validated_tests(file_path, data_path):
     """
     Remove all tests that are not validated by at least one expert source.
 
-    A test is retained if either Valid_Desnuelles or Valid_Soriani is True
-    in the reference table produced by list_unique_test_names(). Tests
-    not present in either list are discarded as clinically uninformative
-    for this study.
+    A test is retained if either Valid_Dr1 or Valid_Dr2 is True in the 
+    reference table produced by list_unique_test_names(). Tests not present 
+    in either list are discarded as clinically uninformative for this study.
 
     Parameters
     ----------
@@ -288,8 +287,8 @@ def filter_validated_tests(file_path, data_path):
     print("Tests before filtering:",    df["Test_Name"].nunique())
 
     valid_tests = df_valid_tests[
-        (df_valid_tests['Valid_Desnuelles'] == True) |
-        (df_valid_tests['Valid_Soriani']    == True)
+        (df_valid_tests['Valid_Dr1'] == True) |
+        (df_valid_tests['Valid_Dr2']    == True)
     ]['Test_Name'].tolist()
 
     df_filtered = df[df['Test_Name'].isin(valid_tests)].copy()
@@ -321,10 +320,10 @@ def list_valid_tests(file_path):
     """
     df_valid_tests = pd.read_csv(file_path, low_memory=False)
     return df_valid_tests[
-        (df_valid_tests['Valid_Desnuelles'] == True) |
-        (df_valid_tests['Valid_Soriani']    == True)
+        (df_valid_tests['Valid_Dr1'] == True) |
+        (df_valid_tests['Valid_Dr2']    == True)
     ][['Test_Name', 'Unique_Subject_ID_Count', 'Percentage_of_Total_Subjects',
-       'Valid_Desnuelles', 'Valid_Soriani']]
+       'Valid_Dr1', 'Valid_Dr2']]
 
 
 
@@ -954,7 +953,7 @@ def run(DATA_PATH, PROACT_PATH, VALIDATION_PATH):
     # Reference - List unique test names and cross-validate against expert lists
     test_names = list_unique_test_names(
         PROACT_PATH + '/PROACT_LABS.csv',
-        VALIDATION_PATH + '/PROACT_LABS_Validation_Desnuelles.csv'
+        VALIDATION_PATH + '/PROACT_LABS_Validation_Dr1.csv'
     )
     test_names.to_csv(DATA_PATH + '/PROACT_LABS_Test_Names.csv', index=False)
 
