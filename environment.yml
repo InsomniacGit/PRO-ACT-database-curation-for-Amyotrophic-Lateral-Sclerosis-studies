@@ -1,0 +1,13 @@
+name: data_proact
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11.9
+  - matplotlib=3.10.8
+  - numpy=2.4.2
+  - openpyxl=3.1.5
+  - pandas=3.0.0
+  - pyarrow=23.0.1
+  - scikit-learn=1.8.0
+  - scipy=1.17.0
+  - tqdm=4.67.3

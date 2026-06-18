@@ -1,9 +1,14 @@
 """
 PROACT Global Pipeline - Centralised Entry Point
 =================================================
-This script is the single entry point for the full PROACT curation pipeline.
-It imports and runs every preprocessing module in the correct dependency order,
-then executes the merge and temporal-alignment steps.
+This script is the single entry point for the complete PROACT data-processing
+and machine-learning pipeline. It sequentially executes all preprocessing,
+merging, temporal alignment, interval generation, prediction, and result
+formatting modules in the correct dependency order.
+
+The pipeline transforms raw PROACT clinical trial data into interval-based
+datasets, trains Random Forest prediction models, and produces formatted
+result summaries for analysis.
 
 Execution order
 ---------------
@@ -13,14 +18,27 @@ Stage A - Per-table preprocessing (16 tables, run independently):
     RILUZOLE, SVC, TREATMENT, VITALSIGNS
 
 Stage B - Non-temporal union merge:
-    MERGE_NODELTA  (joins all non-temporal tables into a single patient-level
-                    baseline feature matrix)
+    MERGE_NODELTA  
+        (joins all non-temporal tables into a single patient-level baseline 
+         feature matrix)
 
 Stage C - First-symptom temporal alignment:
-    ALIGNMENT_FIRST_SYMPTOMS  (re-expresses all Delta columns relative to
-                               HIS_Onset_Delta across every temporal table)
+    ALIGNMENT_FIRST_SYMPTOMS  
+        (re-expresses all Delta columns relative to HIS_Onset_Delta across 
+         every temporal table)
 
-Stage D - In progress...
+Stage D - Interval dataset generation:
+    INTERVALS_COUNT, INTERVALS_ALL, INTERVALS_CUT
+        (build 90-day interval representations, generate interval-level
+         statistics and distributions, and create prediction-ready datasets)
+
+Stage E - Random Forest prediction:
+    RF_PREDICTION
+        (trains and evaluates Random Forest models on interval datasets)
+
+Stage F - Result parsing:
+    RESULT_TEXT_TO_EXCEL
+        (converts raw experiment outputs into formatted Excel summaries)
 
 To run the full pipeline:
     python main.py
@@ -55,6 +73,14 @@ from B_Merge_Nodelta import MERGE_NODELTA
 
 from C_Alignment_First_Symptoms import ALIGNMENT_FIRST_SYMPTOMS
 
+from D_Intervals import INTERVALS_COUNT
+from D_Intervals import INTERVALS_ALL
+from D_Intervals import INTERVALS_CUT
+
+from E_Random_Forest import RF_PREDICTION
+
+from F_Result_Parser import RESULT_TEXT_TO_EXCEL
+
 
 
 # ------------------------------------------------------------------
@@ -77,7 +103,7 @@ DATA_PATH = str(
 )
 
 # Root directory for the non-temporal union merge output (Stage B)
-MERGE_PATH = str(
+MERGE_NODELTA_PATH = str(
     Path.home() / "Desktop" / "DATA_PROACT" / "Merge"
 )
 
@@ -87,14 +113,42 @@ FIRST_SYMPTOMS_PATH = str(
 )
 
 # Root directory for interval-based supervised learning datasets (Stage D)
-INTERVAL_PATH = str(
+INTERVALS_PATH = str(
+    Path.home() / "Desktop" / "DATA_PROACT" / "Intervals"
+)
+
+INTERVALS_COUNT_PATH = str(
+    Path.home() / "Desktop" / "DATA_PROACT" / "Intervals" / "Count"
+)
+
+INTERVALS_FULL_PATH = str(
+    Path.home() / "Desktop" / "DATA_PROACT" / "Intervals" / "CSV"
+)
+
+INTERVALS_CUT_PATH = str(
     Path.home() / "Desktop" / "DATA_PROACT" / "Intervals" / "Cut"
 )
 
+RESULT_PATH = str(
+    Path.home() / "Desktop" / "DATA_PROACT" / "Results"
+)
+
+FEATURE_IMPORTANCE_PATH = str(
+    Path.home() / "Desktop" / "DATA_PROACT" / "Results" / "Feature Importance"
+)
+
 # Create output directories if they do not already exist
-for path in (DATA_PATH, MERGE_PATH, FIRST_SYMPTOMS_PATH, INTERVAL_PATH):
+for path in (DATA_PATH, MERGE_NODELTA_PATH, FIRST_SYMPTOMS_PATH, INTERVALS_PATH, INTERVALS_COUNT_PATH, INTERVALS_FULL_PATH, INTERVALS_CUT_PATH, FEATURE_IMPORTANCE_PATH):
     if not os.path.exists(path):
         os.makedirs(path)
+
+
+
+# ------------------------------------------------------------------
+# Global configuration
+# ------------------------------------------------------------------
+
+PAPER_RESULTS_ONLY = True  # Set to False to generate all intermediate datasets, not just the final results used in the paper
 
 
 
@@ -108,9 +162,9 @@ def main():
     """
     Run the complete PROACT curation pipeline in the correct dependency order.
 
-    Stage A modules are independent of each other and can in principle be
-    run in any order.  Stages B and C depend on previous Stage outputs and 
-    must run after all previous stages are completed.
+    Stage A modules are independent of each other and can in principle be run 
+    in any order. Stages B, C, D, E and F depend on previous Stage outputs and 
+    mustrun after all previous stages are completed.
     """
 
     print("=" * 60)
@@ -146,9 +200,9 @@ def main():
     # Stage B - Non-temporal union merge
     # ------------------------------------------------------------------
     # Joins all non-temporal (no Delta column) tables into a single
-    # patient-level baseline feature matrix saved to MERGE_PATH.
+    # patient-level baseline feature matrix saved to MERGE_NODELTA_PATH.
 
-    MERGE_NODELTA.run(DATA_PATH, MERGE_PATH)
+    MERGE_NODELTA.run(DATA_PATH, MERGE_NODELTA_PATH)
 
     # ------------------------------------------------------------------
     # Stage C - First-symptom temporal alignment
@@ -157,11 +211,30 @@ def main():
     # onset (HIS_Onset_Delta) across every temporal table, producing aligned
     # versions saved to FIRST_SYMPTOMS_PATH.
 
-    ALIGNMENT_FIRST_SYMPTOMS.run(DATA_PATH, MERGE_PATH, FIRST_SYMPTOMS_PATH)
+    ALIGNMENT_FIRST_SYMPTOMS.run(DATA_PATH, MERGE_NODELTA_PATH, FIRST_SYMPTOMS_PATH)
 
-    # Stage D - In progress...
+    # ------------------------------------------------------------------
+    # Stage D - Interval-based supervised learning datasets
+    # ------------------------------------------------------------------
+
+    INTERVALS_COUNT.run(DATA_PATH, FIRST_SYMPTOMS_PATH, INTERVALS_COUNT_PATH)
+    INTERVALS_ALL.run(DATA_PATH, FIRST_SYMPTOMS_PATH, INTERVALS_FULL_PATH)
+    INTERVALS_CUT.run(INTERVALS_FULL_PATH, INTERVALS_CUT_PATH, MERGE_NODELTA_PATH, FIRST_SYMPTOMS_PATH, PAPER_RESULTS_ONLY)     # It takes a while to run
+
+    # ------------------------------------------------------------------
+    # Stage E - Random Forest prediction
+    # ------------------------------------------------------------------
+
+    RF_PREDICTION.run(INTERVALS_CUT_PATH, RESULT_PATH, FEATURE_IMPORTANCE_PATH, PAPER_RESULTS_ONLY)     # It takes a while to run
+
+    # ------------------------------------------------------------------
+    # Stage F - Result parsing and Excel formatting
+    # ------------------------------------------------------------------
+
+    RESULT_TEXT_TO_EXCEL.run(RESULT_PATH)
 
     print("\nAll pipelines completed.")
+
 
 
 if __name__ == "__main__":

@@ -175,11 +175,11 @@ def align_first_symptoms_delta(file_path, output_csv, delta_dict):
 # ------------------------- PIPELINE EXECUTION ---------------------
 # ==================================================================
 
-def run(DATA_PATH, MERGE_PATH, FIRST_SYMPTOMS_PATH):
+def run(DATA_PATH, MERGE_NODELTA_PATH, FIRST_SYMPTOMS_PATH):
 
     print("\n" * 3)
     print("=" * 60)
-    print(" FIRST SYMPTOMS ALIGNMENT PIPELINE")
+    print("FIRST SYMPTOMS ALIGNMENT PIPELINE")
     print("=" * 60)
 
 
@@ -261,7 +261,7 @@ def run(DATA_PATH, MERGE_PATH, FIRST_SYMPTOMS_PATH):
     # This call only drops patients without a recorded symptom onset date,
     # ensuring cohort consistency with the aligned temporal tables.
     align_first_symptoms_delta(
-        file_path  = MERGE_PATH + "/PROACT_MERGE_NODELTA_V2.csv",
+        file_path  = MERGE_NODELTA_PATH + "/PROACT_MERGE_NODELTA_V2.csv",
         output_csv = FIRST_SYMPTOMS_PATH + "/PROACT_MERGE_NODELTA_FIRST_SYMPTOMS.csv",
         delta_dict = delta_dict
     )

@@ -41,7 +41,7 @@ import pandas as pd
 # ------------------------- PIPELINE EXECUTION ---------------------
 # ==================================================================
 
-def run(DATA_PATH, MERGE_PATH):
+def run(DATA_PATH, MERGE_NODELTA_PATH):
 
     print("\n" * 3)
     print("=" * 60)
@@ -84,7 +84,7 @@ def run(DATA_PATH, MERGE_PATH):
     # df_merge_v1 = df_merge_v1.merge(df_riluzole,       on='subject_id', how='outer')
     # df_merge_v1 = df_merge_v1.merge(df_treatment,      on='subject_id', how='outer')
     # df_merge_v1 = df_merge_v1.sort_values(by=['subject_id']).reset_index(drop=True)
-    # df_merge_v1.to_csv(MERGE_PATH + '/PROACT_MERGE_NODELTA_V1.csv', index=False)
+    # df_merge_v1.to_csv(MERGE_NODELTA_PATH + '/PROACT_MERGE_NODELTA_V1.csv', index=False)
 
     # V2 - Full merge including ADVERSE EVENTS and CONMEDS.
     # An outer (union) join is used at each step so that no patient is discarded
@@ -100,8 +100,8 @@ def run(DATA_PATH, MERGE_PATH):
     df_merge_v2 = df_merge_v2.merge(df_riluzole,           on='subject_id', how='outer')
     df_merge_v2 = df_merge_v2.merge(df_treatment,          on='subject_id', how='outer')
     df_merge_v2 = df_merge_v2.sort_values(by=['subject_id']).reset_index(drop=True)
-    df_merge_v2.to_csv(MERGE_PATH + '/PROACT_MERGE_NODELTA_V2.csv', index=False)
+    df_merge_v2.to_csv(MERGE_NODELTA_PATH + '/PROACT_MERGE_NODELTA_V2.csv', index=False)
     print(f'df_merge_v2 shape: {df_merge_v2.shape}')
 
     # V2 with intra-interval statistics (archived; requires pre-computed stats file)
-    # df_merge_v2_stats = pd.read_csv(MERGE_PATH + '/PROACT_MERGE_NODELTA_V2_IntraStats.csv')
+    # df_merge_v2_stats = pd.read_csv(MERGE_NODELTA_PATH + '/PROACT_MERGE_NODELTA_V2_IntraStats.csv')
