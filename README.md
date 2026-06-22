@@ -180,25 +180,29 @@ Stages D and E can require substantial execution time depending on hardware conf
 
 ### Preprocessing — Stage A
 
-Each `PROACT_<TABLE>_processing.py` script exposes a `run(data_path, proact_path)` function and implements the full cleaning chain for its table, including missing-value handling, unit harmonisation, duplicate resolution, and temporal consistency checks.  Key design decisions per table are documented in the script docstrings.
+Each `<TABLE>.py` script exposes a `run(data_path, proact_path)` function and implements the full cleaning chain for its table, including missing-value handling, unit harmonisation, duplicate resolution, and temporal consistency checks.  Key design decisions per table are documented in the script docstrings.
 
 Tables that have no temporal Delta column (ALSHISTORY, DEATHDATA, DEMOGRAPHICS, ELESCORIAL, FAMILYHISTORY, RILUZOLE, TREATMENT) and tables whose Delta column was dropped during preprocessing (ADVERSEEVENTS, CONMEDS) do not produce interval feature files in Stage D.
 
-### Merge — Stage B (`PROACT_MERGE_NODELTA.py`)
+### Merge — Stage B
 
-Performs a union join across all nine non-temporal tables, producing a single patient-level baseline feature matrix (`PROACT_MERGE_NODELTA_V2.csv`).
+| Script | Role |
+|---|---|
+| `MERGE_NODELTA.py` | Union join across all nine non-temporal tables, producing a single patient-level baseline feature matrix (`PROACT_MERGE_NODELTA_V2.csv`) |
 
-### Alignment — Stage C (`PROACT_FIRST_SYMPTOMS_alignment.py`)
+### Alignment — Stage C
 
-Re-expresses all Delta columns relative to `HIS_Onset_Delta` (days from first symptom to study enrolment), producing first-symptom-aligned counterparts of every temporal table.
+| Script | Role |
+|---|---|
+| `ALIGNMENT_FIRST_SYMPTOMS.py` | Re-expresses all Delta columns relative to `HIS_Onset_Delta` (days from first symptom to study enrolment), producing first-symptom-aligned counterparts of every temporal table |
 
 ### Interval extraction — Stage D
 
 | Script | Role |
 |---|---|
-| `PROACT_INTERVALS_COUNT.py` | Counts observations per 90-day interval per patient; produces distribution statistics |
+| `INTERVALS_COUNT.py` | Counts observations per 90-day interval per patient; produces distribution statistics |
 | `INTERVALS_ALL.py` | Computes interval summary statistics (mean, median, slope, min, max, ...) for each clinical variable |
-| `PROACT_INTERVALS_CUT.py` | Generates Fixed and Sliding prediction-ready CSV files; supports single-table, pairwise and full all-table merge configurations |
+| `INTERVALS_CUT.py` | Generates Fixed and Sliding prediction-ready CSV files; supports single-table, pairwise and full all-table merge configurations |
 
 ### Random Forest prediction — Stage E
 
