@@ -21,6 +21,8 @@ The pipeline transforms the raw PROACT clinical dataset into structured, analysi
 5. [Running the pipeline](#running-the-pipeline)
 6. [Script reference](#script-reference)
 7. [Citation](#citation)
+8. [Authors](#authors)
+7. [Licence](#licence)
 
 ---
 
